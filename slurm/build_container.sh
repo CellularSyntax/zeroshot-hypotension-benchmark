@@ -59,12 +59,6 @@ srun \
 set -euo pipefail
 echo '[build:in-container] '\$(python -V)
 echo '[build:in-container] torch: '\$(python -c 'import torch;print(torch.__version__, torch.version.cuda)')
-# Fail fast if the token can't reach the gated repo — BEFORE the ~10-min pip install.
-echo '[build:in-container] Verifying HF token has gated access to NX-AI/TiRex-2 ...'
-HF_TOKEN='${HF_TOKEN}' python -c \"import os; from huggingface_hub import HfApi; HfApi().model_info('NX-AI/TiRex-2', token=os.environ['HF_TOKEN'])\" \
-  || { echo 'ERROR: HF_TOKEN cannot access gated NX-AI/TiRex-2. Accept the license at'; \
-       echo '       https://huggingface.co/NX-AI/TiRex-2  AND enable \"Read access to public gated repos\"'; \
-       echo '       on the token (https://huggingface.co/settings/tokens).'; exit 1; }
 pip install --upgrade pip --quiet
 unset PIP_CONSTRAINT
 pip install --upgrade -r '${PROJECT_ROOT}/requirements_gpu.txt'
