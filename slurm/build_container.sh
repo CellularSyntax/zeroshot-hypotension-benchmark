@@ -73,7 +73,7 @@ echo '[build:in-container] Pre-compiling sLSTM kernels + smoke forecast ...'
 python -c \"import torch, numpy as np; from tirex2 import load_model, TimeseriesType; \
 m=load_model('NX-AI/TiRex-2', device='cuda'); \
 ts=TimeseriesType(target=torch.randn(1,120), past_covariates=None, future_covariates=None); \
-print('smoke forecast ok:', np.asarray(m.forecast([ts])[0]).shape)\" \
+print('smoke forecast ok:', np.asarray(m.forecast([ts], prediction_length=64, output_type='numpy')[0]).shape)\" \
   || echo '[build:in-container] WARNING: kernel pre-compile/smoke skipped — kernels will compile on first job.'
 echo '[build:in-container] pip list (key):'
 pip list 2>/dev/null | grep -iE 'tirex|torch|vitaldb|flashrnn|mlstm|xlstm|numpy|pandas' || true
