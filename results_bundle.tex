@@ -40,6 +40,10 @@
 \caption{Cross-dataset transfer / external validation (covariate-free, M0). Impending-hypotension AUROC vs horizon on each test cohort: (a) VitalDB, (b) the external MOVER cohort. TiRex-2 (zero-shot, training-free) is the bold teal anchor on both; supervised TFT/PatchTST are shown in-domain (solid, held-out 5-fold OOF) versus transferred from the other cohort (dashed, open marker). Shaded band = TiRex-2 case-clustered 95\% CI. VitalDB in-domain is at 15\,s cadence; all transferred and MOVER series are at the harmonised 60\,s cadence.}
 \end{figure}
 \begin{figure}[H]\centering
+\includegraphics[width=\linewidth]{FigS_zeroshot_mover.pdf}
+\caption{Supplementary. External-cohort (MOVER) zero-shot foundation-model benchmark --- the Fig. 3 comparison repeated on the independent MOVER cohort: (a) impending-hypotension AUROC, (b) forecasting CRPS, (c) calibration at 10 min, (d) AUPRC vs horizon. TiRex-2 leads discrimination and probabilistic-forecast accuracy on the external cohort as well; all models are zero-shot and only TiRex-2 ingests the known future drug-infusion covariate.}
+\end{figure}
+\begin{figure}[H]\centering
 \includegraphics[width=\linewidth]{FigS_training_curves.pdf}
 \caption{Supplementary. Per-fold training/validation pinball-loss curves --- all 5 cross-validation folds overlaid --- for the supervised baselines (TFT, PatchTST) on both cohorts, VitalDB (development, rows a--d) and MOVER (external, rows e--h), M1 (with drug covariate) and M0 (without). Validation tracks training across every fold and cohort: convergence without overfitting.}
 \end{figure}
@@ -144,7 +148,7 @@ Hypotension prevalence @15 min, \% & 18.4 \\
 \end{table}
 
 \begin{table}[H]\centering\footnotesize
-\caption{Matched hypotension AUROC among zero-shot time-series foundation models (TiRex-2 vs Chronos-Bolt, TimesFM-2.5, Moirai-1.1-R) on identical held-out test subjects (n=2665 subjects). All evaluated zero-shot (no training); only TiRex-2 ingests the known future drug-infusion covariate.}
+\caption{Matched hypotension AUROC among zero-shot time-series foundation models (TiRex-2 vs Chronos-Bolt, TimesFM-2.5, Moirai-1.1-R) on identical held-out subjects (n=2665 subjects). All evaluated zero-shot (no training); only TiRex-2 ingests the known future drug-infusion covariate.}
 \begin{adjustbox}{max width=\textwidth}
 \begin{tabular}{lllll}
 \toprule
@@ -196,6 +200,24 @@ MOVER & TiRex-2 (zero-shot) & \textbf{0.948} & 0.919 & 0.899 & 0.886 & 0.872 & 0
 7 & 0.905 [0.900, 0.911] & 2.515 & 6.20 & 12.5 & 0.885 [0.880, 0.890] & 2.615 & 6.44 & 31.7 \\
 10 & 0.877 [0.871, 0.883] & 2.839 & 7.01 & 15.0 & 0.870 [0.864, 0.875] & 2.861 & 7.05 & 36.1 \\
 15 & 0.849 [0.842, 0.855] & 3.213 & 7.95 & 18.4 & 0.853 [0.847, 0.859] & 3.140 & 7.73 & 41.4 \\
+\bottomrule
+\end{tabular}
+\end{adjustbox}
+\end{table}
+
+\begin{table}[H]\centering\footnotesize
+\caption{Table S1. Matched hypotension AUROC among zero-shot time-series foundation models (TiRex-2 vs Chronos-Bolt, TimesFM-2.5, Moirai-1.1-R) on identical external MOVER subjects (n=1827 subjects). All evaluated zero-shot (no training); only TiRex-2 ingests the known future drug-infusion covariate.}
+\begin{adjustbox}{max width=\textwidth}
+\begin{tabular}{lllll}
+\toprule
+\textbf{Horizon (min)} & \textbf{TiRex-2 [95\% CI]} & \textbf{Chronos-Bolt [95\% CI]} & \textbf{TimesFM-2.5 [95\% CI]} & \textbf{Moirai-1.1-R [95\% CI]} \\
+\midrule
+1 & 0.947 [0.943, 0.951] & 0.945 [0.941, 0.949] & 0.945 [0.941, 0.949] & 0.928 [0.924, 0.933] \\
+3 & 0.917 [0.912, 0.921] & 0.913 [0.909, 0.918] & 0.914 [0.909, 0.919] & 0.904 [0.899, 0.910] \\
+5 & 0.898 [0.893, 0.903] & 0.892 [0.887, 0.897] & 0.892 [0.887, 0.897] & 0.887 [0.882, 0.893] \\
+7 & 0.885 [0.880, 0.890] & 0.879 [0.874, 0.885] & 0.878 [0.873, 0.884] & 0.874 [0.868, 0.880] \\
+10 & 0.870 [0.864, 0.875] & 0.866 [0.860, 0.871] & 0.865 [0.860, 0.871] & 0.863 [0.857, 0.869] \\
+15 & 0.853 [0.847, 0.859] & 0.851 [0.845, 0.857] & 0.847 [0.841, 0.854] & 0.846 [0.839, 0.852] \\
 \bottomrule
 \end{tabular}
 \end{adjustbox}

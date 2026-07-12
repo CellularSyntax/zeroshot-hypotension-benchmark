@@ -630,10 +630,11 @@ def figure3(tag):
 # ══════════════════════════════════════════════════════════════════════════════
 # FIGURE 3 — zero-shot foundation-model benchmark (TiRex vs other TSFMs)  (headline)
 # ══════════════════════════════════════════════════════════════════════════════
-def figure_zeroshot(tag):
+def figure_zeroshot(tag, save="Fig3_zeroshot_tsfm", cohort_note=None):
     """Among zero-shot TSFMs (no training), TiRex vs Chronos/TimesFM/Moirai on the identical
     matched test split: (a) hypotension AUROC, (b) forecasting CRPS, (c) calibration @10 min,
-    (d) AUPRC vs horizon. TiRex leads on both tasks and uniquely ingests the drug covariate."""
+    (d) AUPRC vs horizon. TiRex leads on both tasks and uniquely ingests the drug covariate.
+    Pass cohort_note (+ a distinct save name) to render the external-cohort (MOVER) variant."""
     zs = available_zeroshot(tag)
     if not zs:
         print("  (no zero-shot TSFM results — skip Fig 3)", flush=True); return
@@ -698,7 +699,9 @@ def figure_zeroshot(tag):
     S.finish(axd, "forecast horizon (min)", "AUPRC", "Precision–recall")
     axd.legend(loc="upper right", fontsize=5.4); S.panel_letter(axd, "d")
 
-    S.save_fig(fig, "Fig3_zeroshot_tsfm")
+    if cohort_note:
+        fig.suptitle(cohort_note, y=0.99, fontsize=8, fontweight="bold")
+    S.save_fig(fig, save)
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -1058,11 +1061,11 @@ def table5_matched_forecast(tag):
                  f"{names}, trained and scored by 5-fold subject-level out-of-fold cross-validation.")
 
 
-def table6_zeroshot(tag):
+def table6_zeroshot(tag, save="Table6_zeroshot", label="Table 6", cohort="held-out"):
     """Matched head-to-head among zero-shot TSFMs (TiRex vs Chronos/TimesFM/Moirai)."""
     zs = available_zeroshot(tag)
     if not zs:
-        print("  (no zero-shot TSFM results — skip Table 6)", flush=True); return
+        print(f"  (no zero-shot TSFM results — skip {label})", flush=True); return
     for z in zs:
         z["M"] = load_matched(z["tag"])
     M = zs[0]["M"]; hs = sorted(int(k) for k in M["per_horizon"])
@@ -1074,9 +1077,9 @@ def table6_zeroshot(tag):
         row += [f(z["M"]["per_horizon"][str(h)]["tft_M1"]) for z in zs]
         rows.append(row)
     names = ", ".join(z["disp"] for z in zs)
-    _write_table("Table6_zeroshot", header, rows,
-                 f"Table 6. Matched hypotension AUROC among zero-shot time-series foundation models "
-                 f"(TiRex-2 vs {names}) on identical held-out test subjects (n={M['n_test_subjects']} "
+    _write_table(save, header, rows,
+                 f"{label}. Matched hypotension AUROC among zero-shot time-series foundation models "
+                 f"(TiRex-2 vs {names}) on identical {cohort} subjects (n={M['n_test_subjects']} "
                  f"subjects). All evaluated zero-shot (no training); only TiRex-2 ingests the known "
                  f"future drug-infusion covariate.")
 
@@ -1133,8 +1136,11 @@ def main():
     print("[paper] Figure 4 (hypotension vs supervised SOTA) ..."); figure3(TAG)
     print("[paper] Figure 5 (clinical translation) ..."); figure4(TAG)
     print("[paper] Supp: training curves ..."); figure_s_training(TAG)
+    print("[paper] Supp: MOVER zero-shot benchmark (external cohort) ...")
+    figure_zeroshot("mover_art", save="FigS_zeroshot_mover", cohort_note="External cohort (MOVER)")
     print("[paper] Tables ..."); table1_cohort(TAG); table2_accuracy(TAG); table3_classification(TAG)
     table4_matched(TAG); table5_matched_forecast(TAG); table6_zeroshot(TAG)
+    table6_zeroshot("mover_art", save="TableS_zeroshot_mover", label="Table S1", cohort="external MOVER")
     print("[paper] Done. Figures in outputs/figs/paper/ ; tables in results/tables/", flush=True)
 
 

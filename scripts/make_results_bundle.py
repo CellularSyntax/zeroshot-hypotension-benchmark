@@ -68,6 +68,12 @@ FIGURES = [
      "(solid, held-out 5-fold OOF) versus transferred from the other cohort (dashed, open marker). "
      "Shaded band = TiRex-2 case-clustered 95\\% CI. VitalDB in-domain is at 15\\,s cadence; all "
      "transferred and MOVER series are at the harmonised 60\\,s cadence."),
+    ("FigS_zeroshot_mover",
+     "Supplementary. External-cohort (MOVER) zero-shot foundation-model benchmark --- the Fig. 3 "
+     "comparison repeated on the independent MOVER cohort: (a) impending-hypotension AUROC, (b) "
+     "forecasting CRPS, (c) calibration at 10 min, (d) AUPRC vs horizon. TiRex-2 leads discrimination "
+     "and probabilistic-forecast accuracy on the external cohort as well; all models are zero-shot and "
+     "only TiRex-2 ingests the known future drug-infusion covariate."),
     ("FigS_training_curves",
      "Supplementary. Per-fold training/validation pinball-loss curves --- all 5 cross-validation folds "
      "overlaid --- for the supervised baselines (TFT, PatchTST) on both cohorts, VitalDB (development, "
@@ -85,6 +91,7 @@ TABLES = [
     ("Table6_zeroshot", None),
     ("Table7_transfer", None),
     ("Table8_external", None),
+    ("TableS_zeroshot_mover", None),
     ("TableS_stats",
      "Paired, case-clustered bootstrap significance tests for the key claims (2000 resamples; cases "
      "resampled with replacement; each comparison paired on identical windows, differenced within "

@@ -1,4 +1,4 @@
-**Table 6. Matched hypotension AUROC among zero-shot time-series foundation models (TiRex-2 vs Chronos-Bolt, TimesFM-2.5, Moirai-1.1-R) on identical held-out test subjects (n=2665 subjects). All evaluated zero-shot (no training); only TiRex-2 ingests the known future drug-infusion covariate.**
+**Table 6. Matched hypotension AUROC among zero-shot time-series foundation models (TiRex-2 vs Chronos-Bolt, TimesFM-2.5, Moirai-1.1-R) on identical held-out subjects (n=2665 subjects). All evaluated zero-shot (no training); only TiRex-2 ingests the known future drug-infusion covariate.**
 
 | Horizon (min) | TiRex-2 [95% CI] | Chronos-Bolt [95% CI] | TimesFM-2.5 [95% CI] | Moirai-1.1-R [95% CI] |
 |---|---|---|---|---|
