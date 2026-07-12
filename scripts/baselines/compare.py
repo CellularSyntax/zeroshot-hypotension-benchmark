@@ -24,7 +24,10 @@ def load_rows(tag):
     files = sorted(glob.glob(f"results/ablation_windows_{tag}_sh*of*.csv")) or [f"results/ablation_windows_{tag}.csv"]
     rows = []
     for f in files:
-        rows.extend(list(csv.DictReader(open(f))))
+        for r in csv.DictReader(open(f)):
+            if r.get("h_min") in ("", None) or None in r.values():   # skip a truncated final line
+                continue
+            rows.append(r)
     return rows
 
 
@@ -40,7 +43,19 @@ def auroc_ci(rows, h, c2s, test_subjects, risk_col="risk_M1", n_boot=1000):
         return None
     au = HE.auroc(y, s)
     lo, hi = HE.clustered_boot_ci(cid, y, s, HE.auroc, n_boot=n_boot)
-    return dict(auroc=round(au, 4), ci=[round(lo, 4), round(hi, 4)], n=len(y), n_events=int(y.sum()))
+    out = dict(auroc=round(au, 4), ci=[round(lo, 4), round(hi, 4)], n=len(y), n_events=int(y.sum()))
+    # if these are 5-fold OOF rows (a 'split' column = fold0..fold4), add cross-fold mean/SD
+    folds = {}
+    for r in hr:
+        sp = r.get("split", "")
+        if isinstance(sp, str) and sp.startswith("fold"):
+            folds.setdefault(sp, []).append((float(r["hypo_event"]), float(r[risk_col])))
+    fa = [HE.auroc(np.array([p[0] for p in v]), np.array([p[1] for p in v]))
+          for v in folds.values() if len(v) > 20 and 0 < sum(p[0] for p in v) < len(v)]
+    if len(fa) >= 2:
+        out["fold_mean"] = round(float(np.mean(fa)), 4); out["fold_sd"] = round(float(np.std(fa)), 4)
+        out["n_folds"] = len(fa)
+    return out
 
 
 def main():
@@ -53,12 +68,11 @@ def main():
 
     tirex = load_rows(args.tirex); base = load_rows(args.baseline)
     c2s = HE.caseid_to_subject()
-    # canonical split over the FULL TiRex cohort (all splits present) -> identical test subjects
-    cohort = sorted({str(r["caseid"]) for r in tirex})
-    split = subject_split(cohort, c2s, seed=args.seed)
-    test_subjects = {c2s.get(c, c) for c in cohort if split[c] == "test"}
+    # All cases: the trained baseline carries out-of-fold (held-out) predictions on every case via
+    # 5-fold CV, and TiRex is inherently held-out (zero-shot), so we score on the full cohort.
+    test_subjects = {c2s.get(str(r["caseid"]), str(r["caseid"])) for r in tirex}
     horizons = sorted({int(r["h_min"]) for r in base})   # baseline defines the horizons present
-    print(f"matched test subjects: {len(test_subjects)}  horizons: {horizons}\n", flush=True)
+    print(f"eval subjects (all cases): {len(test_subjects)}  horizons: {horizons}\n", flush=True)
 
     out = {"tirex_tag": args.tirex, "baseline_tag": args.baseline, "n_test_subjects": len(test_subjects),
            "per_horizon": {}}

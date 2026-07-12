@@ -283,7 +283,7 @@ def figure2(tag):
     prim = load_primary(tag)
     hs = MAIN_H
     c2s = H.caseid_to_subject()
-    trows, _ = H.load_rows(tag); tsub = canonical_test_subjects(trows, c2s)
+    trows, _ = H.load_rows(tag); tsub = eval_subjects(trows, c2s)
     bl = available_baselines(tag)          # trained comparators on the CE cohort (TFT[, PatchTST])
 
     # landscape layout: top row = accuracy (a, d); bottom row = value of the drug covariate (b, c, e).
@@ -389,7 +389,7 @@ def _kapral_panel(ax, tag):
     # our instantaneous endpoint MAE on the matched test split (TiRex + every trained baseline)
     c2s = H.caseid_to_subject()
     rows, _ = H.load_rows(tag)
-    tsub = canonical_test_subjects(rows, c2s)
+    tsub = eval_subjects(rows, c2s)
     hs = MAIN_H
     our = _mean_metric_by_h(rows, c2s, tsub, "mae_inst_M1", hs)
     # Kapral digitized curves (instantaneous)
@@ -465,11 +465,12 @@ def available_zeroshot(tag):
 def load_matched(base_tag):
     return json.load(open(f"results/matched_comparison_{base_tag}.json"))
 
-def canonical_test_subjects(rows, c2s, seed=0):
-    from baselines.splits import subject_split
-    cohort = sorted({str(r["caseid"]) for r in rows})
-    split = subject_split(cohort, c2s, seed=seed)
-    return {c2s.get(c, c) for c in cohort if split[c] == "test"}
+def eval_subjects(rows, c2s, seed=0):
+    """All subjects in the cohort. With 5-fold CV the trained baselines carry out-of-fold (held-out)
+    predictions on ALL cases, and TiRex/zero-shot models are inherently held-out (no training), so
+    every comparison is scored on the full cohort — not a 20% split. Metric functions naturally use
+    each model's available rows, so a model covering fewer cases is scored on what it has."""
+    return {c2s.get(str(r["caseid"]), str(r["caseid"])) for r in rows}
 
 def _scores_subj(rows, c2s, test_subjects, h, risk_col="risk_M1", ev="hypo_event"):
     y, s = [], []
@@ -490,7 +491,7 @@ def figure3(tag):
         b["rows"], _ = H.load_rows(b["tag"]); b["M"] = load_matched(b["tag"])
     primary = bl[0]                                            # TFT — the single-comparator panel (a)
     base_rows = primary["rows"]; M = primary["M"]              # TiRex numbers + foils are shared across baselines
-    test_subj = canonical_test_subjects(rows, c2s)             # identical split for every panel
+    test_subj = eval_subjects(rows, c2s)             # identical split for every panel
     hs = sorted(int(k) for k in M["per_horizon"])
 
     fig = plt.figure(figsize=(9.6, 5.4))                  # 16:9 landscape
@@ -623,7 +624,7 @@ def figure_zeroshot(tag):
         z["M"] = load_matched(z["tag"]); z["rows"], _ = H.load_rows(z["tag"])
     M = zs[0]["M"]; hs = sorted(int(k) for k in M["per_horizon"])
     c2s = H.caseid_to_subject(); trows, _ = H.load_rows(tag)
-    tsub = canonical_test_subjects(trows, c2s)
+    tsub = eval_subjects(trows, c2s)
 
     fig, axs = plt.subplot_mosaic([["a", "b"], ["c", "d"]], figsize=(S.W2, S.W2 * 0.82),
                                   gridspec_kw=dict(hspace=0.5, wspace=0.28))
@@ -896,29 +897,37 @@ def table4_matched(tag):
               + [f"{b['disp']} M1 [95% CI]" for b in bl] + [f"{b['disp']} M0" for b in bl]
               + ["Kapral ext.", "Zhu ext."])
     def f(x): return "—" if not x else f"{x['auroc']:.3f} [{x['ci'][0]:.3f}, {x['ci'][1]:.3f}]"
+    def fb(x):   # trained baseline: append cross-fold ±SD when the 5-fold OOF is present
+        if not x:
+            return "—"
+        s = f"{x['auroc']:.3f} [{x['ci'][0]:.3f}, {x['ci'][1]:.3f}]"
+        return s + (f" ±{x['fold_sd']:.3f}" if "fold_sd" in x else "")
     def f0(x): return "—" if not x else f"{x['auroc']:.3f}"
+    cv = any("fold_sd" in b["M"]["per_horizon"][str(hs[0])].get("tft_M1", {}) for b in bl)
     rows = []
     for h in hs:
         d = M["per_horizon"][str(h)]
         kap = f"{d['kapral_ext']:.3f}" if d.get("kapral_ext") else "—"
         zhu = f"{d['zhu_ext']:.3f}" if d.get("zhu_ext") else "—"
         row = [h, f(d["tirex_M1"])]
-        row += [f(b["M"]["per_horizon"][str(h)]["tft_M1"]) for b in bl]
+        row += [fb(b["M"]["per_horizon"][str(h)]["tft_M1"]) for b in bl]
         row += [f0(b["M"]["per_horizon"][str(h)]["tft_M0"]) for b in bl]
         rows.append(row + [kap, zhu])
     names = " & ".join(b["disp"] for b in bl)
+    split_txt = ("all cases, 5-fold out-of-fold CV; ±SD is across folds" if cv
+                 else "canonical 60/20/20 split")
     _write_table("Table4_matched", header, rows,
-                 f"Table 4. Matched hypotension AUROC on identical held-out test subjects "
-                 f"(n={M['n_test_subjects']} subjects, canonical 60/20/20 split). Zero-shot TiRex-2 vs "
-                 f"{names} trained on the same windows/splits (M1 = with drug covariate, M0 = without); "
-                 f"foils are external references.")
+                 f"Table 4. Matched hypotension AUROC on held-out cases "
+                 f"(n={M['n_test_subjects']} subjects; {split_txt}). Zero-shot TiRex-2 vs "
+                 f"{names} trained on the same windows (M1 = with drug covariate, M0 = without); "
+                 f"CIs are case-clustered bootstrap; foils are external references.")
 
 
 def table5_matched_forecast(tag):
     """Matched forecasting accuracy (CRPS/MAE) on identical held-out test windows."""
     c2s = H.caseid_to_subject()
     trows, _ = H.load_rows(tag)
-    tsub = canonical_test_subjects(trows, c2s)
+    tsub = eval_subjects(trows, c2s)
     bl = available_baselines(tag)
     if not bl:
         bl = [{**MATCHED_BASELINES[0], "tag": f"baseline-tft_{tag}"}]

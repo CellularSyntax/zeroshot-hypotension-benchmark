@@ -27,9 +27,8 @@ def load_rows(tag):
 
 
 def canonical_test_subjects(rows, c2s, seed=0):
-    cohort = sorted({str(r["caseid"]) for r in rows})
-    split = subject_split(cohort, c2s, seed=seed)
-    return {c2s.get(c, c) for c in cohort if split[c] == "test"}
+    # all cases: trained baselines are out-of-fold (held-out) via 5-fold CV; TiRex is zero-shot
+    return {c2s.get(str(r["caseid"]), str(r["caseid"])) for r in rows}
 
 
 def pfmt(p):

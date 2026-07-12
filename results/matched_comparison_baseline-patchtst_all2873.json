@@ -1,0 +1,229 @@
+{
+ "tirex_tag": "all2873",
+ "baseline_tag": "baseline-patchtst_all2873",
+ "n_test_subjects": 2665,
+ "per_horizon": {
+  "1": {
+   "tirex_M1": {
+    "auroc": 0.9855,
+    "ci": [
+     0.984,
+     0.987
+    ],
+    "n": 47642,
+    "n_events": 2572
+   },
+   "tft_M1": {
+    "auroc": 0.9826,
+    "ci": [
+     0.98,
+     0.985
+    ],
+    "n": 47642,
+    "n_events": 2572,
+    "fold_mean": 0.9827,
+    "fold_sd": 0.0022,
+    "n_folds": 5
+   },
+   "tft_M0": {
+    "auroc": 0.9822,
+    "ci": [
+     0.98,
+     0.984
+    ],
+    "n": 47642,
+    "n_events": 2572,
+    "fold_mean": 0.9825,
+    "fold_sd": 0.003,
+    "n_folds": 5
+   },
+   "kapral_ext": null,
+   "zhu_ext": null
+  },
+  "3": {
+   "tirex_M1": {
+    "auroc": 0.9547,
+    "ci": [
+     0.951,
+     0.958
+    ],
+    "n": 47642,
+    "n_events": 3999
+   },
+   "tft_M1": {
+    "auroc": 0.9555,
+    "ci": [
+     0.952,
+     0.959
+    ],
+    "n": 47642,
+    "n_events": 3999,
+    "fold_mean": 0.9552,
+    "fold_sd": 0.0055,
+    "n_folds": 5
+   },
+   "tft_M0": {
+    "auroc": 0.9474,
+    "ci": [
+     0.943,
+     0.952
+    ],
+    "n": 47642,
+    "n_events": 3999,
+    "fold_mean": 0.9471,
+    "fold_sd": 0.0069,
+    "n_folds": 5
+   },
+   "kapral_ext": null,
+   "zhu_ext": null
+  },
+  "5": {
+   "tirex_M1": {
+    "auroc": 0.9289,
+    "ci": [
+     0.924,
+     0.934
+    ],
+    "n": 47642,
+    "n_events": 5048
+   },
+   "tft_M1": {
+    "auroc": 0.9371,
+    "ci": [
+     0.933,
+     0.941
+    ],
+    "n": 47642,
+    "n_events": 5048,
+    "fold_mean": 0.9368,
+    "fold_sd": 0.0051,
+    "n_folds": 5
+   },
+   "tft_M0": {
+    "auroc": 0.9203,
+    "ci": [
+     0.915,
+     0.926
+    ],
+    "n": 47642,
+    "n_events": 5048,
+    "fold_mean": 0.9204,
+    "fold_sd": 0.0077,
+    "n_folds": 5
+   },
+   "kapral_ext": 0.903,
+   "zhu_ext": 0.904
+  },
+  "7": {
+   "tirex_M1": {
+    "auroc": 0.9052,
+    "ci": [
+     0.9,
+     0.911
+    ],
+    "n": 47642,
+    "n_events": 5933
+   },
+   "tft_M1": {
+    "auroc": 0.9184,
+    "ci": [
+     0.914,
+     0.923
+    ],
+    "n": 47642,
+    "n_events": 5933,
+    "fold_mean": 0.9184,
+    "fold_sd": 0.0051,
+    "n_folds": 5
+   },
+   "tft_M0": {
+    "auroc": 0.8975,
+    "ci": [
+     0.891,
+     0.903
+    ],
+    "n": 47642,
+    "n_events": 5933,
+    "fold_mean": 0.8977,
+    "fold_sd": 0.0077,
+    "n_folds": 5
+   },
+   "kapral_ext": 0.867,
+   "zhu_ext": null
+  },
+  "10": {
+   "tirex_M1": {
+    "auroc": 0.8771,
+    "ci": [
+     0.871,
+     0.883
+    ],
+    "n": 47642,
+    "n_events": 7130
+   },
+   "tft_M1": {
+    "auroc": 0.8984,
+    "ci": [
+     0.893,
+     0.903
+    ],
+    "n": 47642,
+    "n_events": 7130,
+    "fold_mean": 0.8982,
+    "fold_sd": 0.0051,
+    "n_folds": 5
+   },
+   "tft_M0": {
+    "auroc": 0.8705,
+    "ci": [
+     0.864,
+     0.877
+    ],
+    "n": 47642,
+    "n_events": 7130,
+    "fold_mean": 0.8707,
+    "fold_sd": 0.0062,
+    "n_folds": 5
+   },
+   "kapral_ext": null,
+   "zhu_ext": 0.892
+  },
+  "15": {
+   "tirex_M1": {
+    "auroc": 0.8486,
+    "ci": [
+     0.842,
+     0.855
+    ],
+    "n": 47642,
+    "n_events": 8776
+   },
+   "tft_M1": {
+    "auroc": 0.875,
+    "ci": [
+     0.869,
+     0.881
+    ],
+    "n": 47642,
+    "n_events": 8776,
+    "fold_mean": 0.875,
+    "fold_sd": 0.0039,
+    "n_folds": 5
+   },
+   "tft_M0": {
+    "auroc": 0.8457,
+    "ci": [
+     0.839,
+     0.852
+    ],
+    "n": 47642,
+    "n_events": 8776,
+    "fold_mean": 0.8464,
+    "fold_sd": 0.0094,
+    "n_folds": 5
+   },
+   "kapral_ext": null,
+   "zhu_ext": 0.882
+  }
+ }
+}

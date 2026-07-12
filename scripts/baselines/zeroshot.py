@@ -22,7 +22,6 @@ import numpy as np
 
 import phase3_ablation as P
 from baselines import data as D
-from baselines.splits import subject_split
 
 QLEVELS = list(map(float, P.QLEVELS))          # [0.1 .. 0.9]
 MED = P.MED
@@ -176,18 +175,15 @@ def main():
     stride = int(ev["origin_stride_min"] * 60 / dt); warmup = int(ev["warmup_min"] * 60 / dt)
     min_run = max(1, int(ev.get("hypotension", {}).get("min_sustain_min", 1) * 60 / dt))
 
-    # canonical 60/20/20 subject split -> evaluate on the SAME held-out test cases as the baselines
-    from baselines.train import caseid_to_subject
-    c2s = caseid_to_subject(cfg["clinical_csv"])
-    split = subject_split(cases, c2s, seed=args.seed)
-    test_cases = [c for c in cases if split[c] == "test"]
+    # Zero-shot models are inherently held-out (no training), and the trained baselines now carry
+    # out-of-fold predictions on ALL cases via 5-fold CV, so we evaluate on the FULL cohort.
     print(f"[zs] model={args.model} cov={args.cov} dt={dt} Lc={Lc} H={H} "
-          f"cases={len(cases)} test={len(test_cases)} tag={tag} device={args.device}", flush=True)
+          f"cases={len(cases)} tag={tag} device={args.device}", flush=True)
 
     t0 = time.time()
-    win, past_names, fut_names = D.build_windows(test_cases, cfg, clin, Lc, H, stride, warmup,
+    win, past_names, fut_names = D.build_windows(cases, cfg, clin, Lc, H, stride, warmup,
                                                  args.max_origins, dt, min_run, quiet=args.quiet)
-    print(f"[zs] built {len(win)} test windows ({time.time()-t0:.0f}s)", flush=True)
+    print(f"[zs] built {len(win)} windows over all {len(cases)} cases ({time.time()-t0:.0f}s)", flush=True)
 
     adapter = build_adapter(args.model, Lc, H).load(args.device)
     print(f"[zs] loaded {args.model}; forecasting ...", flush=True)
@@ -220,7 +216,7 @@ def main():
             for h in hsteps:
                 tr = truth[:h]; hm = round(h * dt / 60)
                 row = {"caseid": w["caseid"], "t0": w["t0"], "h_min": hm, "stratum": w["stratum"],
-                       "t_event_65": w["t_event_65"], "split": "test"}
+                       "t_event_65": w["t_event_65"], "split": "all"}
                 for c in ("M1", "M0"):
                     cr, ma = P.pinball(tr, q[c][:, :h]); row[f"crps_{c}"] = cr; row[f"mae_{c}"] = ma
                     yl = tr[-1]
@@ -236,8 +232,8 @@ def main():
                 wr.writerow(row); n_rows += 1
     json.dump({"tag": tag, "model": args.model, "repo": getattr(adapter, "repo", None),
                "zero_shot": True, "supports_future": adapter.supports_future,
-               "n_test_windows": len(win), "n_rows": n_rows, "split_seed": args.seed,
-               "n_test_cases": len(test_cases)}, open(f"results/baseline_meta_{tag}.json", "w"), indent=1)
+               "n_windows": len(win), "n_rows": n_rows, "split_seed": args.seed,
+               "n_cases": len(cases)}, open(f"results/baseline_meta_{tag}.json", "w"), indent=1)
     print(f"[zs] wrote {path}  ({n_rows} rows) + results/baseline_meta_{tag}.json", flush=True)
     print(f"[zs] Done in {time.time()-t0:.0f}s. Compare: scripts/baselines/compare.py "
           f"--tirex {stem} --baseline {tag}", flush=True)
