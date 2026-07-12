@@ -81,6 +81,7 @@ TABLES = [
     ("Table5_matched_forecast", None),
     ("Table6_zeroshot", None),
     ("Table7_transfer", None),
+    ("Table8_external", None),
     ("TableS_stats",
      "Paired, case-clustered bootstrap significance tests for the key claims (2000 resamples; cases "
      "resampled with replacement; each comparison paired on identical windows, differenced within "

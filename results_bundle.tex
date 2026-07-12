@@ -173,11 +173,29 @@ VitalDB & TiRex-2 (zero-shot) & \textbf{0.986} & \textbf{0.953} & \textbf{0.924}
  & TFT (trained MOVER) & 0.964 & 0.924 & 0.897 & 0.874 & 0.849 & 0.825 \\
  & PatchTST (in-domain) & 0.982 & 0.947 & 0.920 & 0.897 & 0.870 & \textbf{0.846} \\
  & PatchTST (trained MOVER) & 0.967 & 0.928 & 0.900 & 0.877 & 0.851 & 0.832 \\
-MOVER & TiRex-2 (zero-shot) & \textbf{0.949} & \textbf{0.920} & \textbf{0.901} & \textbf{0.888} & \textbf{0.874} & \textbf{0.857} \\
- & TFT (in-domain) & pending & pending & pending & pending & pending & pending \\
+MOVER & TiRex-2 (zero-shot) & \textbf{0.948} & 0.919 & 0.899 & 0.886 & 0.872 & 0.855 \\
+ & TFT (in-domain) & 0.945 & \textbf{0.922} & \textbf{0.903} & \textbf{0.889} & 0.876 & 0.860 \\
  & TFT (trained VitalDB) & 0.940 & 0.914 & 0.895 & 0.881 & 0.866 & 0.846 \\
- & PatchTST (in-domain) & pending & pending & pending & pending & pending & pending \\
+ & PatchTST (in-domain) & 0.945 & 0.919 & 0.901 & 0.888 & \textbf{0.877} & \textbf{0.862} \\
  & PatchTST (trained VitalDB) & 0.939 & 0.912 & 0.895 & 0.881 & 0.868 & 0.851 \\
+\bottomrule
+\end{tabular}
+\end{adjustbox}
+\end{table}
+
+\begin{table}[H]\centering\footnotesize
+\caption{External validation of zero-shot TiRex-2: development cohort (VitalDB, n=2708 cases) vs independent external cohort (MOVER, n=1827 cases), by horizon (with-covariate M1).** The identical zero-shot model is applied to both; results are stratified per cohort (not pooled) because they differ in MAP source, cadence, covariate availability and hypotension prevalence (2--3$\times$ higher in MOVER). AUROC = impending-hypotension discrimination (case-clustered bootstrap 95\% CI); CRPS/MAE = forecasting accuracy (mmHg). TiRex-2 holds AUROC $\geq$ 0.85 across horizons on the external cohort despite the distribution shift.}
+\begin{adjustbox}{max width=\textwidth}
+\begin{tabular}{lllllllll}
+\toprule
+\textbf{Horizon (min)} & \textbf{VitalDB AUROC [95\% CI]} & \textbf{VitalDB CRPS} & \textbf{VitalDB MAE (mmHg)} & \textbf{VitalDB prev. \%} & \textbf{MOVER AUROC [95\% CI]} & \textbf{MOVER CRPS} & \textbf{MOVER MAE (mmHg)} & \textbf{MOVER prev. \%} \\
+\midrule
+1 & 0.985 [0.984, 0.987] & 1.251 & 3.03 & 5.4 & 0.947 [0.943, 0.951] & 1.540 & 3.74 & 16.7 \\
+3 & 0.955 [0.951, 0.958] & 1.827 & 4.46 & 8.4 & 0.917 [0.912, 0.921] & 2.065 & 5.05 & 23.3 \\
+5 & 0.929 [0.924, 0.934] & 2.221 & 5.46 & 10.6 & 0.898 [0.893, 0.903] & 2.387 & 5.86 & 28.1 \\
+7 & 0.905 [0.900, 0.911] & 2.515 & 6.20 & 12.5 & 0.885 [0.880, 0.890] & 2.615 & 6.44 & 31.7 \\
+10 & 0.877 [0.871, 0.883] & 2.839 & 7.01 & 15.0 & 0.870 [0.864, 0.875] & 2.861 & 7.05 & 36.1 \\
+15 & 0.849 [0.842, 0.855] & 3.213 & 7.95 & 18.4 & 0.853 [0.847, 0.859] & 3.140 & 7.73 & 41.4 \\
 \bottomrule
 \end{tabular}
 \end{adjustbox}

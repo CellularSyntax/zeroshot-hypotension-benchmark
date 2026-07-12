@@ -4,8 +4,8 @@ VitalDB,TiRex-2 (zero-shot),0.986,0.953,0.924,0.900,0.872,0.846
 ,TFT (trained MOVER),0.964,0.924,0.897,0.874,0.849,0.825
 ,PatchTST (in-domain),0.982,0.947,0.920,0.897,0.870,0.846
 ,PatchTST (trained MOVER),0.967,0.928,0.900,0.877,0.851,0.832
-MOVER,TiRex-2 (zero-shot),0.949,0.920,0.901,0.888,0.874,0.857
-,TFT (in-domain),pending,pending,pending,pending,pending,pending
+MOVER,TiRex-2 (zero-shot),0.948,0.919,0.899,0.886,0.872,0.855
+,TFT (in-domain),0.945,0.922,0.903,0.889,0.876,0.860
 ,TFT (trained VitalDB),0.940,0.914,0.895,0.881,0.866,0.846
-,PatchTST (in-domain),pending,pending,pending,pending,pending,pending
+,PatchTST (in-domain),0.945,0.919,0.901,0.888,0.877,0.862
 ,PatchTST (trained VitalDB),0.939,0.912,0.895,0.881,0.868,0.851

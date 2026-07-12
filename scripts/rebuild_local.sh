@@ -65,8 +65,9 @@ $PY scripts/paper_figures.py >/dev/null
 echo "==> 4/6  significance tests  (stats_tests.py)"
 $PY scripts/stats_tests.py >/dev/null
 
-echo "==> 5/6  cross-dataset transfer figure + table  (transfer_figure.py)"
+echo "==> 5/6  cross-dataset transfer + external-validation tables  (transfer_figure.py, external_table.py)"
 $PY scripts/transfer_figure.py >/dev/null
+$PY scripts/external_table.py >/dev/null 2>&1 || echo "    [warn] external_table failed (MOVER windows missing?)"
 
 echo "==> 6/6  results bundle  (make_results_bundle.py)"
 $PY scripts/make_results_bundle.py >/dev/null

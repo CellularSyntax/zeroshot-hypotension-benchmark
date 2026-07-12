@@ -40,10 +40,10 @@ CELLS = {
     (VITALDB, "tft",      "transfer"):    "xfer-tft_moverTOvitaldb60",
     (VITALDB, "patchtst", "in-domain"):   "baseline-patchtst_all2873",
     (VITALDB, "patchtst", "transfer"):    "xfer-patchtst_moverTOvitaldb60",
-    # test on MOVER
-    (MOVER,   "tft",      "in-domain"):   "baseline-tft_mover_art",         # may be pending
+    # test on MOVER  (in-domain = 5-fold OOF trained on MOVER; the tag carries the cov suffix)
+    (MOVER,   "tft",      "in-domain"):   "baseline-tft_mover_art_covmover_rate",
     (MOVER,   "tft",      "transfer"):    "xfer-tft_vitaldb60TOmover_art",
-    (MOVER,   "patchtst", "in-domain"):   "baseline-patchtst_mover_art",    # may be pending
+    (MOVER,   "patchtst", "in-domain"):   "baseline-patchtst_mover_art_covmover_rate",
     (MOVER,   "patchtst", "transfer"):    "xfer-patchtst_vitaldb60TOmover_art",
 }
 TIREX = {VITALDB: "all2873", MOVER: "mover_art"}
