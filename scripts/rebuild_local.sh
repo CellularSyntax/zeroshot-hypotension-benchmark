@@ -56,6 +56,7 @@ for t in baseline-tft_all2873 baseline-patchtst_all2873 baseline-chronos_all2873
   [ -e "results/ablation_windows_${t}.csv" ] || continue
   $PY scripts/subgroup_forest.py "$t" 5 >/dev/null 2>&1 || echo "    [warn] subgroup_forest $t failed"
   $PY scripts/clinical_eval.py "$t"      >/dev/null 2>&1 || echo "    [warn] clinical_eval $t failed (no case cache?)"
+  $PY scripts/hypo_eval.py "$t"          >/dev/null 2>&1 || echo "    [warn] hypo_eval $t failed"   # operating pts for Fig 5d
 done
 
 echo "==> 3/6  figures + tables  (paper_figures.py)"
