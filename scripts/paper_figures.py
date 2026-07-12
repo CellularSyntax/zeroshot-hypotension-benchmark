@@ -53,6 +53,22 @@ def _test_scores(rows, c2s, dev, h, risk_col="risk_M1", ev_col="hypo_event"):
     return np.array(y), np.array(s)
 
 
+def _mean_metric_by_h(rows, c2s, test_subjects, metric, hs):
+    """Mean of a per-window metric (e.g. mae_M1, crps_M1) per horizon, on canonical test windows."""
+    per = {h: [] for h in hs}
+    for r in rows:
+        cid = str(r["caseid"])
+        if c2s.get(cid, cid) not in test_subjects:
+            continue
+        v = r.get(metric)
+        if v in ("", "nan", None):
+            continue
+        h = int(r["h_min"])
+        if h in per:
+            per[h].append(float(v))
+    return [float(np.mean(per[h])) if per[h] else np.nan for h in hs]
+
+
 # ══════════════════════════════════════════════════════════════════════════════
 # FIGURE 1 — study design & cohort
 # ══════════════════════════════════════════════════════════════════════════════
@@ -200,16 +216,19 @@ def figure2(tag):
     fig, axs = plt.subplot_mosaic([["a", "b"], ["c", "d"]], figsize=(S.W2, S.W2*0.72),
                                   gridspec_kw=dict(hspace=0.55, wspace=0.35))
 
-    # a — instantaneous MAE (mmHg) vs horizon, M1 vs M0
+    # a — forecast accuracy head-to-head: zero-shot TiRex vs trained TFT (matched test, MAE)
     hs = MAIN_H
-    mae1 = [strat(prim, h, "all")["mae_M1"] for h in hs]
-    mae0 = [strat(prim, h, "all")["mae_M0"] for h in hs]
+    c2s = H.caseid_to_subject()
+    trows, _ = H.load_rows(tag); brows, _ = H.load_rows(f"baseline-tft_{tag}")
+    tsub = canonical_test_subjects(trows, c2s)
+    mae_tx = _mean_metric_by_h(trows, c2s, tsub, "mae_M1", hs)
+    mae_tf = _mean_metric_by_h(brows, c2s, tsub, "mae_M1", hs)
     a = axs["a"]
-    a.plot(hs, mae1, "-o", color=S.C["M1"], label="M1 (+ drug covariate)")
-    a.plot(hs, mae0, "-s", color=S.C["M0"], label="M0 (target only)")
+    a.plot(hs, mae_tx, "-o", color=S.C["M1"], lw=2.0, label="TiRex-2 (zero-shot)")
+    a.plot(hs, mae_tf, "--s", color=TFT_COL, ms=3.5, label="TFT (trained)")
     y7 = strat(prim, 7, "all")["Y_pct_vs_persistence"]
-    a.text(0.34, 0.05, f"vs persistence: −{y7:.0f}% CRPS", transform=a.transAxes, fontsize=6, color="#555")
-    S.finish(a, "forecast horizon (min)", "MAE (mmHg)", "Forecast accuracy")
+    a.text(0.27, 0.05, f"both beat persistence (−{y7:.0f}% CRPS)", transform=a.transAxes, fontsize=6, color="#555")
+    S.finish(a, "forecast horizon (min)", "MAE (mmHg)", "Forecast accuracy: zero-shot vs trained")
     a.set_xticks(hs); a.legend(loc="upper left"); S.panel_letter(a, "a")
 
     # b — covariate benefit X% vs horizon, by stratum
@@ -311,8 +330,9 @@ def _scores_subj(rows, c2s, test_subjects, h, risk_col="risk_M1", ev="hypo_event
 def figure3(tag):
     rows, _ = H.load_rows(tag); c2s = H.caseid_to_subject()
     base_tag = f"baseline-tft_{tag}"
+    base_rows, _ = H.load_rows(base_tag)                         # trained-TFT predictions (test windows)
     M = load_matched(base_tag)                                   # matched head-to-head (canonical split)
-    test_subj = canonical_test_subjects(rows, c2s)               # identical split for every TiRex panel
+    test_subj = canonical_test_subjects(rows, c2s)               # identical split for every panel
     hs = sorted(int(k) for k in M["per_horizon"])
 
     fig = plt.figure(figsize=(9.6, 5.4))                  # 16:9 landscape
@@ -351,39 +371,47 @@ def figure3(tag):
     ax_auc.set_xticks(hs); ax_auc.set_ylim(0.80, 1.0)
     ax_auc.legend(loc="upper right", fontsize=5.4); S.panel_letter(ax_auc, "b")
 
-    # c — calibration at 5 min (TiRex, matched test)
+    # c — calibration at 5 min: TiRex vs TFT (matched test)
     y5, s5 = _scores_subj(rows, c2s, test_subj, 5)
     mp, of, _, ece = H.calibration(y5, s5, n_bins=10)
+    yb, sb = _scores_subj(base_rows, c2s, test_subj, 5)
+    mpb, ofb, _, eceb = H.calibration(yb, sb, n_bins=10)
     ax_cal.plot([0, 1], [0, 1], color="#BBB", lw=0.7, ls=":")
-    ax_cal.plot(mp, of, "-o", color=S.C["M1"], ms=3)
-    ax_cal.text(0.05, 0.9, f"ECE = {ece:.3f}", transform=ax_cal.transAxes, fontsize=6)
+    ax_cal.plot(mpb, ofb, "--s", color=TFT_COL, ms=3, label=f"TFT (ECE {eceb:.3f})")
+    ax_cal.plot(mp, of, "-o", color=S.C["M1"], ms=3, label=f"TiRex-2 (ECE {ece:.3f})")
     ax_cal.set_xlim(0, 1); ax_cal.set_ylim(0, 1)
     S.finish(ax_cal, "predicted risk", "observed frequency", "Calibration @5 min")
-    S.panel_letter(ax_cal, "c")
+    ax_cal.legend(loc="lower right", fontsize=5.4); S.panel_letter(ax_cal, "c")
 
-    # d — AUPRC vs horizon (TiRex, matched test) with rising-prevalence baseline
-    ap, prev = [], []
+    # d — AUPRC vs horizon: TiRex vs TFT (matched test) with rising-prevalence baseline
+    ap, apb, prev = [], [], []
     for h in hs:
         y, s = _scores_subj(rows, c2s, test_subj, h)
-        ap.append(H.auprc(y, s)); prev.append(float(y.mean()) if len(y) else np.nan)
-    ax_pr.plot(hs, ap, "-o", color=S.C["M1"], label="AUPRC (TiRex-2)")
-    ax_pr.plot(hs, prev, "--", color=S.C["persist"], label="prevalence (chance)")
+        yb2, sb2 = _scores_subj(base_rows, c2s, test_subj, h)
+        ap.append(H.auprc(y, s)); apb.append(H.auprc(yb2, sb2)); prev.append(float(y.mean()) if len(y) else np.nan)
+    ax_pr.plot(hs, ap, "-o", color=S.C["M1"], label="TiRex-2 (zero-shot)")
+    ax_pr.plot(hs, apb, "--s", color=TFT_COL, ms=3, label="TFT (trained)")
+    ax_pr.plot(hs, prev, ":", color=S.C["persist"], label="prevalence (chance)")
     S.finish(ax_pr, "forecast horizon (min)", "AUPRC", "Precision–recall")
-    ax_pr.set_xticks(hs); ax_pr.set_ylim(0, 1); ax_pr.legend(loc="upper right"); S.panel_letter(ax_pr, "d")
+    ax_pr.set_xticks(hs); ax_pr.set_ylim(0, 1); ax_pr.legend(loc="upper right", fontsize=5.4); S.panel_letter(ax_pr, "d")
 
-    # e — decision curve @5 min (TiRex, matched test), net benefit computed inline
-    pts = np.linspace(0.01, 0.5, 40); N = len(y5); pv = y5.mean()
-    nb, nball = [], []
-    for p in pts:
-        fl = s5 >= p; tp = np.sum(fl & (y5 == 1)); fp = np.sum(fl & (y5 == 0)); w = p / (1 - p)
-        nb.append(tp / N - fp / N * w); nball.append(pv - (1 - pv) * w)
-    nb = np.array(nb); nball = np.array(nball)
+    # e — decision curve @5 min: TiRex vs TFT (matched test), net benefit computed inline
+    def net_benefit(y, s, pts):
+        N = len(y); nb = []
+        for p in pts:
+            fl = s >= p; tp = np.sum(fl & (y == 1)); fp = np.sum(fl & (y == 0)); w = p / (1 - p)
+            nb.append(tp / N - fp / N * w)
+        return np.array(nb)
+    pts = np.linspace(0.01, 0.5, 40); pv = y5.mean()
+    nb = net_benefit(y5, s5, pts); nbf = net_benefit(yb, sb, pts)
+    nball = np.array([pv - (1 - pv) * (p / (1 - p)) for p in pts])
     ax_dca.plot(pts, nb, color=S.C["M1"], lw=1.4, label="TiRex-2")
+    ax_dca.plot(pts, nbf, "--", color=TFT_COL, lw=1.2, label="TFT")
     ax_dca.plot(pts, nball, color=S.C["persist"], lw=1.0, label="treat all")
     ax_dca.axhline(0, color="#999", lw=0.8, label="treat none")
     ax_dca.set_ylim(-0.02, max(0.02, np.nanmax(nb) * 1.15)); ax_dca.set_xlim(pts.min(), pts.max())
     S.finish(ax_dca, "threshold probability", "net benefit", "Decision curve @5 min")
-    ax_dca.legend(loc="upper right"); S.panel_letter(ax_dca, "e")
+    ax_dca.legend(loc="upper right", fontsize=5.4); S.panel_letter(ax_dca, "e")
 
     # f — head-to-head AUROC bars at 5 & 7 min: zero-shot vs trained vs foils (matched split)
     from matplotlib.patches import Patch
@@ -630,6 +658,24 @@ def table4_matched(tag):
                  f"Temporal Fusion Transformer trained on the same windows/splits; foils are external references.")
 
 
+def table5_matched_forecast(tag):
+    """Matched forecasting accuracy (CRPS/MAE) on identical held-out test windows."""
+    c2s = H.caseid_to_subject()
+    trows, _ = H.load_rows(tag); brows, _ = H.load_rows(f"baseline-tft_{tag}")
+    tsub = canonical_test_subjects(trows, c2s)
+    hs = sorted({int(r["h_min"]) for r in brows})
+    crps_tx = _mean_metric_by_h(trows, c2s, tsub, "crps_M1", hs)
+    crps_tf = _mean_metric_by_h(brows, c2s, tsub, "crps_M1", hs)
+    mae_tx = _mean_metric_by_h(trows, c2s, tsub, "mae_M1", hs)
+    mae_tf = _mean_metric_by_h(brows, c2s, tsub, "mae_M1", hs)
+    header = ["Horizon (min)", "CRPS TiRex-2", "CRPS TFT", "MAE TiRex-2 (mmHg)", "MAE TFT (mmHg)"]
+    rows = [[h, f"{crps_tx[i]:.3f}", f"{crps_tf[i]:.3f}", f"{mae_tx[i]:.2f}", f"{mae_tf[i]:.2f}"]
+            for i, h in enumerate(hs)]
+    _write_table("Table5_matched_forecast", header, rows,
+                 "Table 5. Matched probabilistic-forecasting accuracy on identical held-out test windows. "
+                 "Zero-shot TiRex-2 vs the trained TFT (M1, with drug covariate).")
+
+
 def figure_s_training(tag):
     """Supplementary: TFT baseline train/val pinball-loss curves (convergence, no overfitting)."""
     base_tag = f"baseline-tft_{tag}"
@@ -664,7 +710,8 @@ def main():
     print("[paper] Figure 3 ..."); figure3(TAG)
     print("[paper] Figure 4 ..."); figure4(TAG)
     print("[paper] Supp: training curves ..."); figure_s_training(TAG)
-    print("[paper] Tables ..."); table1_cohort(TAG); table2_accuracy(TAG); table3_classification(TAG); table4_matched(TAG)
+    print("[paper] Tables ..."); table1_cohort(TAG); table2_accuracy(TAG); table3_classification(TAG)
+    table4_matched(TAG); table5_matched_forecast(TAG)
     print("[paper] Done. Figures in outputs/figs/paper/ ; tables in results/tables/", flush=True)
 
 
