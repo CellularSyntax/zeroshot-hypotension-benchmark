@@ -1,5 +1,5 @@
 \begin{table}[t]\centering\footnotesize
-\caption{Table 4. Matched hypotension AUROC on held-out cases (n=2665 subjects; all cases, 5-fold out-of-fold CV; ±SD is across folds). Zero-shot TiRex-2 vs TFT & PatchTST trained on the same windows (M1 = with drug covariate, M0 = without); CIs are case-clustered bootstrap; foils are external references.}
+\caption{Table 4. Matched hypotension AUROC (n=2665 subjects; all cases, 5-fold subject-level out-of-fold cross-validation). Zero-shot TiRex-2 (inherently held out) vs TFT & PatchTST, trained on the same windows and scored by out-of-fold prediction — each case is predicted only by the fold in which it was held out; M1 = with drug covariate, M0 = without. Bracketed intervals are case-clustered bootstrap 95% CIs, ±SD is across the 5 folds; foils are external literature references.}
 \begin{tabular}{llllllll}
 \toprule
 Horizon (min) & TiRex-2 zero-shot [95% CI] & TFT M1 [95% CI] & PatchTST M1 [95% CI] & TFT M0 & PatchTST M0 & Kapral ext. & Zhu ext. \\

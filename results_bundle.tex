@@ -21,7 +21,7 @@
 \end{figure}
 \begin{figure}[H]\centering
 \includegraphics[width=\linewidth]{Fig2_accuracy_covariate.pdf}
-\caption{Forecast accuracy and the value of the known drug covariate. (a) MAE vs horizon, zero-shot TiRex-2 vs trained TFT/PatchTST. (b) TiRex-2 covariate benefit by window type. (c) Covariate benefit by drug representation and model (transition windows, 7 min; markers = mean, whiskers = case-clustered 95\% CI). (d) Instantaneous MAE vs Kapral et al. (e) Covariate value by model (bar view of the CE row of c). Univariate zero-shot foundation models (Chronos-Bolt, TimesFM, Moirai) cannot ingest the covariate (0 by construction) and are omitted from panels c and e.}
+\caption{Forecast accuracy and the value of the known drug covariate. (a) MAE vs horizon, zero-shot TiRex-2 vs trained TFT/PatchTST. (b) TiRex-2 covariate benefit by window type. (c) Covariate benefit by drug representation and model (transition windows, 7 min; markers = mean, whiskers = case-clustered 95\% CI). (d) Instantaneous MAE vs Kapral et al. (e) Covariate value by model (bar view of the CE row of c). Univariate zero-shot foundation models (Chronos-Bolt, TimesFM, Moirai) cannot ingest the covariate (0 by construction) and are omitted from panels c and e. \textit{Evaluation:} the trained baselines (TFT, PatchTST) are scored on all cases by 5-fold subject-level out-of-fold cross-validation --- each case is predicted only by the fold in which it was held out --- while TiRex-2 is zero-shot and thus inherently held out; all models are scored on identical windows with the same metric code.}
 \end{figure}
 \begin{figure}[H]\centering
 \includegraphics[width=\linewidth]{Fig3_zeroshot_tsfm.pdf}
@@ -29,7 +29,7 @@
 \end{figure}
 \begin{figure}[H]\centering
 \includegraphics[width=\linewidth]{Fig4_hypotension_vs_sota.pdf}
-\caption{Impending-hypotension prediction vs supervised state of the art. (a) ROC at 5 and 7 min; (b) AUROC vs horizon; (c) calibration; (d) AUPRC; (e) decision curve; (f) head-to-head AUROC at 5/7 min --- zero-shot TiRex-2 vs trained TFT and PatchTST, with external foils (Kapral, Zhu).}
+\caption{Impending-hypotension prediction vs supervised state of the art (with-covariate, M1 arm). (a) ROC at 5 and 7 min; (b) AUROC vs horizon; (c) calibration; (d) AUPRC; (e) decision curve; (f) head-to-head AUROC at 5/7 min --- zero-shot TiRex-2 vs trained TFT and PatchTST, with external foils (Kapral, Zhu). \textit{Evaluation:} the trained baselines are scored on all cases by 5-fold subject-level out-of-fold cross-validation --- each case is predicted only by the fold in which it was held out --- while TiRex-2 is zero-shot and thus inherently held out; both are scored on identical windows with the same metric code. Shaded bands in (b) and error intervals are case-clustered bootstrap 95\% CIs; external foils are literature values.}
 \end{figure}
 \begin{figure}[H]\centering
 \includegraphics[width=\linewidth]{Fig5_clinical_robustness.pdf}
@@ -106,7 +106,7 @@ Hypotension prevalence @15 min, \% & 18.4 \\
 \end{table}
 
 \begin{table}[H]\centering\footnotesize
-\caption{Matched hypotension AUROC on held-out cases (n=2665 subjects; all cases, 5-fold out-of-fold CV; $\pm$SD is across folds). Zero-shot TiRex-2 vs TFT \& PatchTST trained on the same windows (M1 = with drug covariate, M0 = without); CIs are case-clustered bootstrap; foils are external references.}
+\caption{Matched hypotension AUROC (n=2665 subjects; all cases, 5-fold subject-level out-of-fold cross-validation). Zero-shot TiRex-2 (inherently held out) vs TFT \& PatchTST, trained on the same windows and scored by out-of-fold prediction --- each case is predicted only by the fold in which it was held out; M1 = with drug covariate, M0 = without. Bracketed intervals are case-clustered bootstrap 95\% CIs, $\pm$SD is across the 5 folds; foils are external literature references.}
 \begin{adjustbox}{max width=\textwidth}
 \begin{tabular}{llllllll}
 \toprule
@@ -124,7 +124,7 @@ Hypotension prevalence @15 min, \% & 18.4 \\
 \end{table}
 
 \begin{table}[H]\centering\footnotesize
-\caption{Matched probabilistic-forecasting accuracy on identical held-out test windows. Zero-shot TiRex-2 vs trained TFT, PatchTST (M1, with drug covariate).}
+\caption{Matched probabilistic-forecasting accuracy on identical windows (all cases; M1, with drug covariate). Zero-shot TiRex-2 (inherently held out) vs TFT, PatchTST, trained and scored by 5-fold subject-level out-of-fold cross-validation.}
 \begin{adjustbox}{max width=\textwidth}
 \begin{tabular}{lllllll}
 \toprule
@@ -142,18 +142,18 @@ Hypotension prevalence @15 min, \% & 18.4 \\
 \end{table}
 
 \begin{table}[H]\centering\footnotesize
-\caption{Matched hypotension AUROC among zero-shot time-series foundation models (TiRex-2 vs Chronos-Bolt, TimesFM-2.5, Moirai-1.1-R) on identical held-out test subjects (n=533 subjects). All evaluated zero-shot (no training); only TiRex-2 ingests the known future drug-infusion covariate.}
+\caption{Matched hypotension AUROC among zero-shot time-series foundation models (TiRex-2 vs Chronos-Bolt, TimesFM-2.5, Moirai-1.1-R) on identical held-out test subjects (n=2665 subjects). All evaluated zero-shot (no training); only TiRex-2 ingests the known future drug-infusion covariate.}
 \begin{adjustbox}{max width=\textwidth}
 \begin{tabular}{lllll}
 \toprule
 \textbf{Horizon (min)} & \textbf{TiRex-2 [95\% CI]} & \textbf{Chronos-Bolt [95\% CI]} & \textbf{TimesFM-2.5 [95\% CI]} & \textbf{Moirai-1.1-R [95\% CI]} \\
 \midrule
-1 & 0.986 [0.982, 0.989] & 0.984 [0.980, 0.987] & 0.985 [0.980, 0.989] & 0.972 [0.964, 0.980] \\
-3 & 0.954 [0.945, 0.962] & 0.945 [0.934, 0.954] & 0.942 [0.931, 0.951] & 0.938 [0.927, 0.948] \\
-5 & 0.932 [0.921, 0.942] & 0.924 [0.912, 0.934] & 0.921 [0.908, 0.932] & 0.922 [0.910, 0.933] \\
-7 & 0.907 [0.893, 0.919] & 0.898 [0.883, 0.910] & 0.897 [0.882, 0.910] & 0.900 [0.887, 0.912] \\
-10 & 0.887 [0.873, 0.900] & 0.876 [0.861, 0.888] & 0.876 [0.861, 0.890] & 0.879 [0.866, 0.892] \\
-15 & 0.857 [0.841, 0.871] & 0.849 [0.833, 0.863] & 0.854 [0.838, 0.869] & 0.848 [0.832, 0.862] \\
+1 & 0.986 [0.984, 0.987] & 0.984 [0.980, 0.987] & 0.985 [0.980, 0.989] & 0.972 [0.963, 0.979] \\
+3 & 0.955 [0.951, 0.958] & 0.945 [0.934, 0.954] & 0.942 [0.931, 0.951] & 0.936 [0.924, 0.947] \\
+5 & 0.929 [0.924, 0.934] & 0.924 [0.912, 0.934] & 0.921 [0.908, 0.932] & 0.922 [0.911, 0.933] \\
+7 & 0.905 [0.900, 0.911] & 0.898 [0.883, 0.910] & 0.897 [0.882, 0.910] & 0.899 [0.885, 0.910] \\
+10 & 0.877 [0.871, 0.883] & 0.876 [0.861, 0.888] & 0.876 [0.861, 0.890] & 0.876 [0.863, 0.889] \\
+15 & 0.849 [0.842, 0.855] & 0.849 [0.833, 0.863] & 0.854 [0.838, 0.869] & 0.847 [0.831, 0.861] \\
 \bottomrule
 \end{tabular}
 \end{adjustbox}
@@ -171,7 +171,7 @@ VitalDB & TiRex-2 (zero-shot) & 0.986 & 0.953 & 0.924 & 0.900 & 0.872 & 0.846 \\
  & TFT (trained MOVER) & 0.964 & 0.924 & 0.897 & 0.874 & 0.849 & 0.825 \\
  & PatchTST (in-domain) & 0.982 & 0.947 & 0.920 & 0.897 & 0.870 & 0.846 \\
  & PatchTST (trained MOVER) & 0.967 & 0.928 & 0.900 & 0.877 & 0.851 & 0.832 \\
-MOVER & TiRex-2 (zero-shot) & 0.949 & 0.922 & 0.902 & 0.887 & 0.875 & 0.857 \\
+MOVER & TiRex-2 (zero-shot) & 0.949 & 0.921 & 0.901 & 0.888 & 0.875 & 0.858 \\
  & TFT (in-domain) & pending & pending & pending & pending & pending & pending \\
  & TFT (trained VitalDB) & 0.940 & 0.914 & 0.895 & 0.881 & 0.866 & 0.846 \\
  & PatchTST (in-domain) & pending & pending & pending & pending & pending & pending \\
@@ -200,9 +200,9 @@ Zero-shot AUROC difference (Fig 3) & TiRex-2 - Chronos-Bolt @5min & +0.008 & [+0
  & TiRex-2 - TimesFM-2.5 @5min & +0.011 & [+0.005, +0.017] & $<$0.001 & *** \\
  & TiRex-2 - TimesFM-2.5 @10min & +0.011 & [+0.004, +0.018] & 0.002 & ** \\
  & TiRex-2 - TimesFM-2.5 @15min & +0.003 & [-0.004, +0.010] & 0.396 & n.s. \\
- & TiRex-2 - Moirai-1.1-R @5min & +0.010 & [+0.003, +0.016] & 0.004 & ** \\
- & TiRex-2 - Moirai-1.1-R @10min & +0.008 & [+0.000, +0.016] & 0.042 & * \\
- & TiRex-2 - Moirai-1.1-R @15min & +0.010 & [+0.001, +0.018] & 0.027 & * \\
+ & TiRex-2 - Moirai-1.1-R @5min & +0.010 & [+0.003, +0.016] & 0.005 & ** \\
+ & TiRex-2 - Moirai-1.1-R @10min & +0.011 & [+0.004, +0.019] & 0.009 & ** \\
+ & TiRex-2 - Moirai-1.1-R @15min & +0.011 & [+0.003, +0.019] & 0.012 & * \\
 Trained-SOTA AUROC difference (Fig 4) & TiRex-2 - TFT @5min & +0.006 & [+0.002, +0.009] & 0.002 & ** \\
  & TiRex-2 - TFT @7min & +0.002 & [-0.002, +0.005] & 0.337 & n.s. \\
  & TiRex-2 - TFT @15min & -0.011 & [-0.016, -0.007] & $<$0.001 & *** \\

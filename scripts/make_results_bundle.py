@@ -26,17 +26,25 @@ FIGURES = [
      "benefit by drug representation and model (transition windows, 7 min; markers = mean, whiskers = "
      "case-clustered 95\\% CI). (d) Instantaneous MAE vs Kapral et al. (e) Covariate value by model "
      "(bar view of the CE row of c). Univariate zero-shot foundation models (Chronos-Bolt, TimesFM, "
-     "Moirai) cannot ingest the covariate (0 by construction) and are omitted from panels c and e."),
+     "Moirai) cannot ingest the covariate (0 by construction) and are omitted from panels c and e. "
+     "\\textit{Evaluation:} the trained baselines (TFT, PatchTST) are scored on all cases by 5-fold "
+     "subject-level out-of-fold cross-validation --- each case is predicted only by the fold in which "
+     "it was held out --- while TiRex-2 is zero-shot and thus inherently held out; all models are "
+     "scored on identical windows with the same metric code."),
     ("Fig3_zeroshot_tsfm",
      "Zero-shot foundation-model benchmark. TiRex-2 vs Chronos-Bolt, TimesFM-2.5 and Moirai-1.1-R on "
      "identical matched test windows, all evaluated zero-shot: (a) impending-hypotension AUROC, "
      "(b) forecasting CRPS, (c) calibration at 10 min (ECE), (d) AUPRC vs horizon. Only TiRex-2 "
      "ingests the known future drug-infusion covariate."),
     ("Fig4_hypotension_vs_sota",
-     "Impending-hypotension prediction vs supervised state of the art. (a) ROC at 5 and 7 min; "
-     "(b) AUROC vs horizon; (c) calibration; (d) AUPRC; (e) decision curve; (f) head-to-head AUROC "
-     "at 5/7 min --- zero-shot TiRex-2 vs trained TFT and PatchTST, with external foils "
-     "(Kapral, Zhu)."),
+     "Impending-hypotension prediction vs supervised state of the art (with-covariate, M1 arm). "
+     "(a) ROC at 5 and 7 min; (b) AUROC vs horizon; (c) calibration; (d) AUPRC; (e) decision curve; "
+     "(f) head-to-head AUROC at 5/7 min --- zero-shot TiRex-2 vs trained TFT and PatchTST, with "
+     "external foils (Kapral, Zhu). \\textit{Evaluation:} the trained baselines are scored on all "
+     "cases by 5-fold subject-level out-of-fold cross-validation --- each case is predicted only by "
+     "the fold in which it was held out --- while TiRex-2 is zero-shot and thus inherently held out; "
+     "both are scored on identical windows with the same metric code. Shaded bands in (b) and error "
+     "intervals are case-clustered bootstrap 95\\% CIs; external foils are literature values."),
     ("Fig5_clinical_robustness",
      "Clinical translation and robustness: early-warning lead time, severity gradient, subgroup "
      "AUROC forest, and operating characteristics."),

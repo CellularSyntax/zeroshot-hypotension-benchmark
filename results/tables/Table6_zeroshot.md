@@ -1,10 +1,10 @@
-**Table 6. Matched hypotension AUROC among zero-shot time-series foundation models (TiRex-2 vs Chronos-Bolt, TimesFM-2.5, Moirai-1.1-R) on identical held-out test subjects (n=533 subjects). All evaluated zero-shot (no training); only TiRex-2 ingests the known future drug-infusion covariate.**
+**Table 6. Matched hypotension AUROC among zero-shot time-series foundation models (TiRex-2 vs Chronos-Bolt, TimesFM-2.5, Moirai-1.1-R) on identical held-out test subjects (n=2665 subjects). All evaluated zero-shot (no training); only TiRex-2 ingests the known future drug-infusion covariate.**
 
 | Horizon (min) | TiRex-2 [95% CI] | Chronos-Bolt [95% CI] | TimesFM-2.5 [95% CI] | Moirai-1.1-R [95% CI] |
 |---|---|---|---|---|
-| 1 | 0.986 [0.982, 0.989] | 0.984 [0.980, 0.987] | 0.985 [0.980, 0.989] | 0.972 [0.964, 0.980] |
-| 3 | 0.954 [0.945, 0.962] | 0.945 [0.934, 0.954] | 0.942 [0.931, 0.951] | 0.938 [0.927, 0.948] |
-| 5 | 0.932 [0.921, 0.942] | 0.924 [0.912, 0.934] | 0.921 [0.908, 0.932] | 0.922 [0.910, 0.933] |
-| 7 | 0.907 [0.893, 0.919] | 0.898 [0.883, 0.910] | 0.897 [0.882, 0.910] | 0.900 [0.887, 0.912] |
-| 10 | 0.887 [0.873, 0.900] | 0.876 [0.861, 0.888] | 0.876 [0.861, 0.890] | 0.879 [0.866, 0.892] |
-| 15 | 0.857 [0.841, 0.871] | 0.849 [0.833, 0.863] | 0.854 [0.838, 0.869] | 0.848 [0.832, 0.862] |
+| 1 | 0.986 [0.984, 0.987] | 0.984 [0.980, 0.987] | 0.985 [0.980, 0.989] | 0.972 [0.963, 0.979] |
+| 3 | 0.955 [0.951, 0.958] | 0.945 [0.934, 0.954] | 0.942 [0.931, 0.951] | 0.936 [0.924, 0.947] |
+| 5 | 0.929 [0.924, 0.934] | 0.924 [0.912, 0.934] | 0.921 [0.908, 0.932] | 0.922 [0.911, 0.933] |
+| 7 | 0.905 [0.900, 0.911] | 0.898 [0.883, 0.910] | 0.897 [0.882, 0.910] | 0.899 [0.885, 0.910] |
+| 10 | 0.877 [0.871, 0.883] | 0.876 [0.861, 0.888] | 0.876 [0.861, 0.890] | 0.876 [0.863, 0.889] |
+| 15 | 0.849 [0.842, 0.855] | 0.849 [0.833, 0.863] | 0.854 [0.838, 0.869] | 0.847 [0.831, 0.861] |

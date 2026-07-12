@@ -122,10 +122,28 @@ model-agnostic.
 
 ## 3. Pull results to the Mac (for figures/tables)
 
-`outputs/` and the big `ablation_windows_*.csv` are git-ignored, so copy them off the cluster:
+`outputs/` and the big `ablation_windows_*.csv` are git-ignored, so copy them off the cluster.
+
+**Raw vs derived — and why a naive `scp -r` corrupts the local analysis.** The cluster is the
+source of truth ONLY for the raw files it produces (`ablation_windows_*.csv`, `ablation_primary_*.json`,
+`baseline_meta_*.json`, `baseline_history_*.json`, `baseline_ckpt_*.pt`, `hypo_metrics_*.json`,
+`clinical_eval_*.json`). The *derived* files — `results/matched_comparison_*.json`, everything in
+`results/tables/`, and `results_bundle.*` — are computed **locally** (all-cases 5-fold OOF, tuned
+captions). A whole-folder `scp -r`/`rsync` OVERWRITES those derived files with the cluster's stale
+copies (e.g. a matched-comparison reverting to the old 20 % subset). Two ways to stay safe:
+
 ```bash
-scp -r <cluster>:~/tirex-2/tirex-vitaldb/results ./            # JSONs, matched comparisons, windows CSVs, histories
+# (a) preferred: pull ONLY the raw files (never touches derived) ...
+rsync -av --exclude='matched_comparison_*' --exclude='tables/' \
+      <cluster>:~/tirex-2/tirex-vitaldb/results/ ./results/
+
+# ... OR (b) pull everything, then rebuild every derived artifact from the raw window CSVs:
+scp -r <cluster>:~/tirex-2/tirex-vitaldb/results ./
+bash scripts/rebuild_local.sh          # idempotent; window CSVs are the single source of truth
 ```
+Running `scripts/rebuild_local.sh` after **any** sync is the belt-and-suspenders fix: it re-runs
+`compare.py` for every baseline present, then paper_figures → stats_tests → transfer_figure →
+make_results_bundle (+ pdflatex). `SKIP_PDF=1` skips the LaTeX compile.
 (The small manifest, foil tables, and kapral curves are already in the repo.)
 
 ---

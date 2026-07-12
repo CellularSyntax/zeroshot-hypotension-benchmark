@@ -500,16 +500,17 @@ def figure3(tag):
     ax_roc = fig.add_subplot(gs[0, 0]); ax_auc = fig.add_subplot(gs[0, 1]); ax_cal = fig.add_subplot(gs[0, 2])
     ax_pr = fig.add_subplot(gs[1, 0]); ax_dca = fig.add_subplot(gs[1, 1]); ax_bar = fig.add_subplot(gs[1, 2])
 
-    # a — ROC at 5 and 7 min: TiRex (solid) vs TFT (dashed), matched test
+    # a — ROC at 5 and 7 min: TiRex (solid) vs every trained baseline (its own linestyle), matched test
     for h, col in [(5, S.C["M1"]), (7, S.C["transition"])]:
         y, s = _scores_subj(rows, c2s, test_subj, h)
         fpr, tpr, _ = H.roc_points(y, s); au = H.auroc(y, s)
-        ax_roc.plot(fpr, tpr, "-", color=col, lw=1.5, label=f"TiRex {h} min ({au:.3f})")
+        ax_roc.plot(fpr, tpr, "-", color=col, lw=1.6, label=f"TiRex-2 {h} min ({au:.3f})")
         ax_roc.plot(0.10, float(np.interp(0.10, fpr, tpr)), "o", color=col, ms=5,
                     mec="white", mew=0.6, zorder=6)                       # spec >= 0.90 operating point
-        yb, sb = _scores_subj(base_rows, c2s, test_subj, h)
-        fb, tb, _ = H.roc_points(yb, sb); aub = H.auroc(yb, sb)
-        ax_roc.plot(fb, tb, "--", color=col, lw=1.0, label=f"TFT {h} min ({aub:.3f})")
+        for b in bl:                                                      # TFT (dashed) + PatchTST (dash-dot)
+            yb, sb = _scores_subj(b["rows"], c2s, test_subj, h)
+            fb, tb, _ = H.roc_points(yb, sb); aub = H.auroc(yb, sb)
+            ax_roc.plot(fb, tb, b["ls"], color=col, lw=1.0, label=f"{b['disp']} {h} min ({aub:.3f})")
     ax_roc.plot([0, 1], [0, 1], color="#BBB", lw=0.7, ls=":")
     ax_roc.set_xlim(0, 1); ax_roc.set_ylim(0, 1.005)
     S.finish(ax_roc, "1 − specificity", "sensitivity", "ROC — zero-shot vs trained")
@@ -914,13 +915,15 @@ def table4_matched(tag):
         row += [f0(b["M"]["per_horizon"][str(h)]["tft_M0"]) for b in bl]
         rows.append(row + [kap, zhu])
     names = " & ".join(b["disp"] for b in bl)
-    split_txt = ("all cases, 5-fold out-of-fold CV; ±SD is across folds" if cv
-                 else "canonical 60/20/20 split")
+    split_txt = ("all cases, 5-fold subject-level out-of-fold cross-validation"
+                 if cv else "canonical 60/20/20 split")
     _write_table("Table4_matched", header, rows,
-                 f"Table 4. Matched hypotension AUROC on held-out cases "
-                 f"(n={M['n_test_subjects']} subjects; {split_txt}). Zero-shot TiRex-2 vs "
-                 f"{names} trained on the same windows (M1 = with drug covariate, M0 = without); "
-                 f"CIs are case-clustered bootstrap; foils are external references.")
+                 f"Table 4. Matched hypotension AUROC (n={M['n_test_subjects']} subjects; {split_txt}). "
+                 f"Zero-shot TiRex-2 (inherently held out) vs {names}, trained on the same windows and "
+                 f"scored by out-of-fold prediction — each case is predicted only by the fold in which it "
+                 f"was held out; M1 = with drug covariate, M0 = without. Bracketed intervals are "
+                 f"case-clustered bootstrap 95% CIs" + (", ±SD is across the 5 folds" if cv else "") +
+                 f"; foils are external literature references.")
 
 
 def table5_matched_forecast(tag):
@@ -948,8 +951,9 @@ def table5_matched_forecast(tag):
         rows.append(row)
     names = ", ".join(b["disp"] for b in bl)
     _write_table("Table5_matched_forecast", header, rows,
-                 "Table 5. Matched probabilistic-forecasting accuracy on identical held-out test windows. "
-                 f"Zero-shot TiRex-2 vs trained {names} (M1, with drug covariate).")
+                 "Table 5. Matched probabilistic-forecasting accuracy on identical windows (all cases; M1, "
+                 "with drug covariate). Zero-shot TiRex-2 (inherently held out) vs "
+                 f"{names}, trained and scored by 5-fold subject-level out-of-fold cross-validation.")
 
 
 def table6_zeroshot(tag):

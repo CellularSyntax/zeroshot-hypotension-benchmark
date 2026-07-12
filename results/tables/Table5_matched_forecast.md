@@ -1,4 +1,4 @@
-**Table 5. Matched probabilistic-forecasting accuracy on identical held-out test windows. Zero-shot TiRex-2 vs trained TFT, PatchTST (M1, with drug covariate).**
+**Table 5. Matched probabilistic-forecasting accuracy on identical windows (all cases; M1, with drug covariate). Zero-shot TiRex-2 (inherently held out) vs TFT, PatchTST, trained and scored by 5-fold subject-level out-of-fold cross-validation.**
 
 | Horizon (min) | CRPS TiRex-2 | CRPS TFT | CRPS PatchTST | MAE TiRex-2 (mmHg) | MAE TFT (mmHg) | MAE PatchTST (mmHg) |
 |---|---|---|---|---|---|---|
