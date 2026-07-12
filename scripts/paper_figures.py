@@ -305,7 +305,6 @@ def figure3(tag):
     ax_roc.set_xlim(0, 1); ax_roc.set_ylim(0, 1.005)
     S.finish(ax_roc, "1 − specificity", "sensitivity", "ROC (M1)", ygrid=False)
     ax_roc.legend(loc="lower right", bbox_to_anchor=(1.0, 0.02)); S.panel_letter(ax_roc, "a")
-    ax_roc.text(0.30, 0.55, "● spec ≥ 0.90\n  operating point", fontsize=5.5, color="#555", transform=ax_roc.transAxes)
 
     # b — AUROC vs horizon, M1 vs M0, with foils overlaid (THE panel)
     hs = S.horizons_sorted(hyp["per_horizon"])
@@ -377,10 +376,10 @@ def figure3(tag):
             ax_bar.bar(xi, v, width=w, color=col, edgecolor="white", lw=0.4)
             ax_bar.text(xi, v+0.004, f"{v:.3f}", ha="center", va="bottom", fontsize=5.2, rotation=90)
     ax_bar.set_xticks(x); ax_bar.set_xticklabels([f"{g} min" for g in groups])
-    ax_bar.set_ylim(0.80, 0.96)
+    ax_bar.set_ylim(0.80, 1.0)                         # headroom so the legend clears the bars
     S.finish(ax_bar, None, "hypotension AUROC", "Head-to-head vs SOTA")
     ax_bar.legend(handles=[Patch(facecolor=col, label=lab) for lab, col, _ in series_f],
-                  loc="upper right", fontsize=5.4); S.panel_letter(ax_bar, "f")
+                  loc="upper right", fontsize=5.4, framealpha=0.9); S.panel_letter(ax_bar, "f")
 
     S.save_fig(fig, "Fig3_hypotension_vs_sota")
 
@@ -391,8 +390,8 @@ def figure3(tag):
 def figure4(tag):
     clin = load_clinical(tag); hyp = load_hypo(tag); sg = load_subgroup(tag, 5)
     fig = plt.figure(figsize=(8.6, 4.9))                  # landscape
-    gs = fig.add_gridspec(2, 3, width_ratios=[1.0, 1.0, 0.95], height_ratios=[0.82, 1.0],
-                          hspace=0.5, wspace=0.42, left=0.07, right=0.83, top=0.91, bottom=0.11)
+    gs = fig.add_gridspec(2, 3, width_ratios=[1.0, 1.0, 0.95], height_ratios=[0.48, 1.0],
+                          hspace=0.55, wspace=0.42, left=0.07, right=0.83, top=0.93, bottom=0.10)
     axs = {"a": fig.add_subplot(gs[0, 0:2]),
            "b": fig.add_subplot(gs[1, 0]),
            "d": fig.add_subplot(gs[1, 1]),
@@ -402,10 +401,11 @@ def figure4(tag):
     A = clin["A_early_warning"]
     a = axs["a"]
     med = A["lead_time_min_median"]; iqr = A["lead_time_min_IQR"]
-    # pct_detected_* are already in percent (0-100)
-    a.barh([0], [A["pct_detected_ge2min_ahead"]], color=S.C["M1_light"], height=0.5, label="≥2 min ahead")
-    a.barh([1], [A["pct_detected_ge5min_ahead"]], color=S.C["M1"], height=0.5, label="≥5 min ahead")
+    # pct_detected_* are already in percent (0-100); bars close together in a short panel
+    a.barh([0], [A["pct_detected_ge2min_ahead"]], color=S.C["M1_light"], height=0.62, label="≥2 min ahead")
+    a.barh([1], [A["pct_detected_ge5min_ahead"]], color=S.C["M1"], height=0.62, label="≥5 min ahead")
     a.set_yticks([0, 1]); a.set_yticklabels(["detected\n≥2 min", "detected\n≥5 min"])
+    a.set_ylim(-0.6, 1.6)
     a.set_xlim(0, 100); a.set_xlabel("% of events flagged in advance")
     a.set_title(f"Early warning — median lead {med:.1f} min (IQR {iqr[0]:.1f}–{iqr[1]:.1f})", loc="center", fontsize=6.8)
     for yv, key in [(0, "pct_detected_ge2min_ahead"), (1, "pct_detected_ge5min_ahead")]:
