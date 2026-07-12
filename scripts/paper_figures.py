@@ -189,7 +189,7 @@ def _example_panel(ax, ex, i, title):
     ax.set_title(title, loc="center", fontsize=7)
     ax.set_xlabel("time (min)")
     ax.set_ylabel("MAP (mmHg)")
-    ax.set_xlim(tc[0], th[-1])
+    ax.set_xlim(tc[0], th[-1]); ax.set_ylim(40, 120)     # shared y-range across the 3 examples
 
 
 # ══════════════════════════════════════════════════════════════════════════════
