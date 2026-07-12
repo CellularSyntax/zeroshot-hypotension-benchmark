@@ -150,8 +150,8 @@ def figure1(tag):
     else:
         ex = np.load(f"outputs/figs/examples_{tag}.npz", allow_pickle=True); picks = _pick_examples(ex)
 
-    fig = plt.figure(figsize=(S.W2, S.W2 * 0.80))
-    gs = fig.add_gridspec(2, 3, height_ratios=[1.0, 1.0], hspace=1.05, wspace=0.42)
+    fig = plt.figure(figsize=(S.W2 * 1.42, S.W2 * 0.80))     # 16:9 landscape
+    gs = fig.add_gridspec(2, 3, height_ratios=[1.0, 1.0], hspace=1.05, wspace=0.34)
     ax_sch = fig.add_subplot(gs[0, :2])     # a schematic (wide, top-left)
     ax_flow = fig.add_subplot(gs[0, 2])     # b cohort flow (top-right, same row as a)
     ax_ex = [fig.add_subplot(gs[1, i]) for i in range(3)]  # c examples (bottom row, 3 across)
@@ -263,12 +263,13 @@ def _example_panel(ax, ex, i, title):
     ctx = ex["context"][i]; truth = ex["truth"][i]; q = ex["q_ce"][i]
     tc = np.arange(-len(ctx), 0)*dt_min
     th = (np.arange(len(truth))+1)*dt_min
-    ax.plot(tc, ctx, color=S.C["ink"], lw=1.0)
-    ax.plot(th, truth, color=S.C["ink"], lw=1.3, label="observed")
-    ax.plot(th, q[S.Q_MED], color=S.C["M1"], lw=1.3, label="M1 median")
-    ax.fill_between(th, q[S.Q_LO], q[S.Q_HI], color=S.C["M1_light"], alpha=0.55, lw=0, label="10–90%")
-    ax.axvline(0, color="#888", lw=0.7, ls=":")
-    ax.axhline(65, color=S.C["event"], lw=0.7, ls="--")
+    ax.axvspan(tc[0], 0, color="#F2F2F2", zorder=0)                   # shade context window (matches panel a)
+    ax.plot(tc, ctx, color=S.C["ink"], lw=1.1, zorder=4)             # observed history (model input)
+    ax.plot(th, truth, color="#AEB4BA", lw=1.2, zorder=2, label="observed (truth)")   # future truth, muted
+    ax.fill_between(th, q[S.Q_LO], q[S.Q_HI], color=S.C["M1_light"], alpha=0.5, lw=0, zorder=1, label="10–90%")
+    ax.plot(th, q[S.Q_MED], color=S.C["M1"], lw=1.9, zorder=5, label="TiRex-2 median")  # forecast on top
+    ax.axvline(0, color="#888", lw=0.7, ls=":", zorder=3)
+    ax.axhline(65, color=S.C["event"], lw=0.7, ls="--", zorder=1)
     ax.set_title(title, loc="center", fontsize=7)
     ax.set_xlabel("time (min)")
     ax.set_ylabel("MAP (mmHg)")
