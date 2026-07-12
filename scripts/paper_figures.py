@@ -68,19 +68,22 @@ def figure1(tag):
         ex = np.load(f"outputs/figs/examples_{tag}.npz", allow_pickle=True); picks = _pick_examples(ex)
 
     fig = plt.figure(figsize=(S.W2, S.W2 * 0.80))
-    gs = fig.add_gridspec(2, 3, height_ratios=[1.0, 1.0], hspace=0.95, wspace=0.42)
+    gs = fig.add_gridspec(2, 3, height_ratios=[1.0, 1.0], hspace=1.05, wspace=0.42)
     ax_sch = fig.add_subplot(gs[0, :2])     # a schematic (wide, top-left)
-    ax_flow = fig.add_subplot(gs[:, 2])     # b cohort flow — spans the full figure height
-    sub = gs[1, :2].subgridspec(1, 3, wspace=0.55)
-    ax_ex = [fig.add_subplot(sub[0, i]) for i in range(3)]  # c examples (bottom-left, 3 across)
+    ax_flow = fig.add_subplot(gs[0, 2])     # b cohort flow (top-right, same row as a)
+    ax_ex = [fig.add_subplot(gs[1, i]) for i in range(3)]  # c examples (bottom row, 3 across)
 
     # a — task schematic (illustrative)
     _schematic(ax_sch)
     S.panel_letter(ax_sch, "a", dx=-0.10, dy=1.14)
 
-    # b — cohort flow (funnel)
+    # b — cohort flow (funnel). Extend its axes down into the otherwise-empty gap so it
+    # fills the same vertical footprint as the schematic + its covariate inset (top unchanged).
+    pa = ax_sch.get_position(); pb = ax_flow.get_position()
+    new_bottom = pa.y0 - 0.40*pa.height       # align with the schematic inset's bottom edge
+    ax_flow.set_position([pb.x0, new_bottom, pb.width, pb.y1 - new_bottom])
     _cohort_flow(ax_flow, flow, prim, hyp, n_cohort)
-    S.panel_letter(ax_flow, "b", dx=-0.10, dy=1.14)
+    S.panel_letter(ax_flow, "b", dx=-0.10, dy=1.06)
 
     # c — three representative forecasts (steady / transition / hypotensive onset)
     titles = ["Steady", "Transition", "Hypotensive onset"]
