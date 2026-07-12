@@ -361,7 +361,7 @@ def figure2(tag):
     # with case-clustered 95% CIs. Only covariate-aware models benefit; other zero-shot TSFMs are 0.
     e = axs["e"]
     tb = strat(prim, 7, "transition")
-    bars = [("Other zero-shot\nTSFMs", 0.0, None, "#9AA0A6"),
+    bars = [("Other zero-shot\nTSFMs (univariate)", 0.0, None, "#9AA0A6"),
             ("TiRex-2\n(zero-shot)", tb["X_pct_withpast"], tb["X_pct_withpast_CI95"], S.C["M1"])]
     for m in MATCHED_BASELINES:
         r = _baseline_xpct_ci(f"baseline-{m['key']}_{tag}", "transition", 7)
