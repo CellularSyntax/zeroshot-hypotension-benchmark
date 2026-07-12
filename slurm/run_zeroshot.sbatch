@@ -51,9 +51,9 @@ source '${PROJECT_ROOT}/slurm/setup_env.sh'
 # The foundation weights are UNGATED and not yet cached -> allow network downloads
 # (setup_env.sh forces HF_HUB_OFFLINE=1 for the gated TiRex repo; we don't load TiRex here).
 unset HF_HUB_OFFLINE || true
-VENV='${PROJECT_ROOT}/.tsfm-venv'
+VENV='${PROJECT_ROOT}/.tsfm-venv-${MODEL}'   # per-model isolated env (own torch, no conflicts)
 if [ ! -f \"\$VENV/bin/activate\" ]; then
-  echo '[zs] ERROR: .tsfm-venv missing — run: sbatch slurm/setup_tsfm.sbatch' >&2; exit 1
+  echo \"[zs] ERROR: \$VENV missing — run: MODELS=${MODEL} sbatch slurm/setup_tsfm.sbatch\" >&2; exit 1
 fi
 source \"\$VENV/bin/activate\"
 cd '${PROJECT_ROOT}'

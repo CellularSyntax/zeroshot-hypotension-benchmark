@@ -89,9 +89,15 @@ no "agree to license" click is required to pull weights):
 ¹ Moirai *can* take covariates, but the per-window path in `zeroshot.py` currently runs it
 univariate too — verify its adapter on the cluster before a full sweep (see note below).
 
+Each model gets its **own fully-isolated venv** (`.tsfm-venv-<model>`, shipping its own torch) —
+the three libraries pin mutually-incompatible torch/numpy versions (uni2ts wants torch 2.4, which
+clobbers everything if shared), so they must not share an environment.
+
 ```bash
-# --- one-time: build the venv with the three extra libs on top of the container torch ---
-sbatch slurm/setup_tsfm.sbatch          # ~10-15 min; creates .tsfm-venv (reused by every run)
+# --- one-time: build a separate isolated venv per model (~30 min all three; disk ~15 GB) ---
+sbatch slurm/setup_tsfm.sbatch                     # all three
+# or one at a time (rebuild / iterate):
+MODELS=chronos sbatch slurm/setup_tsfm.sbatch
 
 # --- run the sweep (start with chronos: ungated, fastest, no covariate fuss) ---
 MODEL=chronos sbatch slurm/run_zeroshot.sbatch     # -> baseline-chronos_all2873.* + matched_comparison_*
