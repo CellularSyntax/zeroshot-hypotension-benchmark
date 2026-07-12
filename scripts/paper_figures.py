@@ -712,26 +712,28 @@ def _mini2x2(fig, cell, keys, models, valfn, ylim, letter, ylabel, blocktitle, h
     """Nested 2x2 of horizon line plots inside one gridspec cell. keys=[(data_key, subplot_title)];
     valfn(model_tag, data_key, horizon)->float|None. Models overlaid per subplot; TiRex-2 highlighted.
     Shared block title / x- / y-labels are drawn in the cell's outer margins."""
-    sub = cell.subgridspec(2, 2, hspace=0.5, wspace=0.14)
+    sub = cell.subgridspec(2, 2, hspace=0.42, wspace=0.14)
     axes = []
     for i, (k, ptitle) in enumerate(keys):
         r, c = divmod(i, 2)
         ax = fig.add_subplot(sub[r, c]); axes.append(ax)
-        for disp, mt, col, is_tir in models:
+        for disp, mt, col, is_tir, mk in models:
             ys = [valfn(mt, k, h) for h in hs]
             if all(v is None for v in ys):
                 continue
-            ax.plot(hs, ys, "-", color=col, lw=(1.6 if is_tir else 0.85),
+            ax.plot(hs, ys, "-", marker=mk, color=col, lw=(1.6 if is_tir else 0.85),
+                    ms=(3.1 if is_tir else 2.5), mew=0.3, mec="white",
                     alpha=(1.0 if is_tir else 0.72), zorder=(5 if is_tir else 3), solid_capstyle="round")
         ax.set_title(ptitle, fontsize=5.0, pad=1.5)
         ax.set_xlim(0.5, 15.5); ax.set_xticks([1, 5, 10, 15]); ax.set_ylim(*ylim)
+        ax.set_box_aspect(1)                         # square subplots (1:1)
         ax.tick_params(labelsize=4.3, length=1.5, pad=1.0)
         if c == 1:
             ax.set_yticklabels([])
         if r == 0:
             ax.set_xticklabels([])
     pos = cell.get_position(fig)
-    fig.text(pos.x0 + pos.width / 2, pos.y1 + 0.008, blocktitle, ha="center", va="bottom",
+    fig.text(pos.x0 + pos.width / 2, pos.y1 + 0.030, blocktitle, ha="center", va="bottom",
              fontsize=7, fontweight="bold")
     fig.text(pos.x0 + pos.width / 2, pos.y0 - 0.052, "forecast horizon (min)", ha="center", va="top", fontsize=5.6)
     fig.text(pos.x0 - 0.030, pos.y0 + pos.height / 2, ylabel, rotation=90, ha="right", va="center", fontsize=5.6)
@@ -745,17 +747,17 @@ def figure4(tag):
                           hspace=0.52, wspace=0.46, left=0.075, right=0.82, top=0.92, bottom=0.15)
     axs = {"a": fig.add_subplot(gs[0, 0:2]), "c": fig.add_subplot(gs[:, 2])}
 
-    # the four models overlaid in panels b & d (fixed colours, matches the forest & lead-time panels)
-    MODELS = [("TiRex-2 (zero-shot)", tag, S.C["M1"], True),
-              ("TFT (trained)", f"baseline-tft_{tag}", "#566573", False),
-              ("PatchTST (trained)", f"baseline-patchtst_{tag}", "#3D5A80", False),
-              ("Chronos-Bolt (zero-shot)", f"baseline-chronos_{tag}", "#D35400", False)]
+    # the four models overlaid in panels b & d (fixed colours + markers, matching the forest panel)
+    MODELS = [("TiRex-2 (zero-shot)", tag, S.C["M1"], True, "o"),
+              ("TFT (trained)", f"baseline-tft_{tag}", "#566573", False, "s"),
+              ("PatchTST (trained)", f"baseline-patchtst_{tag}", "#3D5A80", False, "^"),
+              ("Chronos-Bolt (zero-shot)", f"baseline-chronos_{tag}", "#D35400", False, "D")]
 
     # a — early-warning lead time: TiRex-2 vs trained baselines + best zero-shot foil (grouped bars)
     a = axs["a"]
     lead = {mt: (_load_json(f"results/clinical_eval_{mt}.json") or {}).get("A_early_warning")
-            for _, mt, _, _ in MODELS}
-    avail = [(disp, mt, col, tir) for disp, mt, col, tir in MODELS if lead.get(mt)]
+            for _, mt, _, _, _ in MODELS}
+    avail = [(disp, mt, col, tir) for disp, mt, col, tir, mk in MODELS if lead.get(mt)]
     metrics = [("pct_detected_ge2min_ahead", "≥2 min ahead"), ("pct_detected_ge5min_ahead", "≥5 min ahead")]
     nm = len(avail); bw = 0.82 / max(nm, 1); x = np.arange(len(metrics))
     for j, (disp, mt, col, tir) in enumerate(avail):     # TiRex highlighted; comparators muted
@@ -774,18 +776,18 @@ def figure4(tag):
 
     # b — severity: 2x2, one subplot per MAP threshold, the four models overlaid across horizons
     sevdata = {mt: (_load_json(f"results/clinical_eval_{mt}.json") or {}).get("B_severity", {})
-               for _, mt, _, _ in MODELS}
+               for _, mt, _, _, _ in MODELS}
     def sev_val(mt, k, h):
         d = sevdata.get(mt, {}).get(k, {}).get(str(h))
         return d["auroc"] if d else None
-    SEV_KEYS = [("MAP<65 (≥1min)", "MAP < 65"), ("MAP<55 (≥1min)", "MAP < 55"),
-                ("MAP<50 (≥1min)", "MAP < 50"), ("MAP<65 (≥5min, sustained)", "MAP < 65, sustained")]
+    SEV_KEYS = [("MAP<65 (≥1min)", "MAP < 65 mmHg"), ("MAP<55 (≥1min)", "MAP < 55 mmHg"),
+                ("MAP<50 (≥1min)", "MAP < 50 mmHg"), ("MAP<65 (≥5min, sustained)", "MAP < 65 mmHg, sustained")]
     _mini2x2(fig, gs[1, 0], SEV_KEYS, MODELS, sev_val, (0.66, 1.0), "b",
              "hypotension AUROC", "Severity-stratified detection")
 
     # d — operating characteristics: 2x2, one subplot per metric, the four models overlaid
     opdata = {mt: (_load_json(f"results/hypo_metrics_{mt}.json") or {}).get("per_horizon", {})
-              for _, mt, _, _ in MODELS}
+              for _, mt, _, _, _ in MODELS}
     def op_val(mt, metric, h):
         try:
             return opdata[mt][S.hkey(h)]["M1"]["operating_points"]["spec90"][metric]
@@ -797,7 +799,8 @@ def figure4(tag):
 
     # shared model legend for b & d (colours also match a & c) — bottom centre
     from matplotlib.lines import Line2D
-    mh = [Line2D([], [], color=col, lw=(2.0 if tir else 1.1), label=disp) for disp, mt, col, tir in MODELS]
+    mh = [Line2D([], [], color=col, marker=mk, ms=4, lw=(2.0 if tir else 1.1), label=disp)
+          for disp, mt, col, tir, mk in MODELS]
     fig.legend(handles=mh, loc="lower center", ncol=4, fontsize=6, frameon=False, bbox_to_anchor=(0.45, 0.0))
 
     # c — subgroup forest (tall panel): TiRex-2 with CI + comparators overlaid per subgroup
@@ -839,14 +842,14 @@ def _forest(ax, sg, comparators=None):
                     transform=ax.get_yaxis_transform())
             yticks.append(y); ylabels.append("")
         else:
-            for disp, cmap, col, mk in cmaps:                         # comparators behind, no CI
-                cs = cmap.get((s["var"], s["level"]))
-                if cs:
-                    ax.plot(cs["auroc"], y, mk, color=col, ms=2.9, alpha=0.8, mec="white",
-                            mew=0.3, zorder=3)
             au, ci = s["auroc"], s["ci"]
             ax.errorbar(au, y, xerr=[[au-ci[0]], [ci[1]-au]], fmt="o", color=S.C["M1"],
-                        ms=3.4, capsize=1.8, lw=1.0, zorder=5)         # TiRex-2 on top with CI
+                        ms=3.4, capsize=1.8, lw=1.0, zorder=3)         # TiRex-2 CI underneath
+            for disp, cmap, col, mk in cmaps:                         # comparators ON TOP so they're visible
+                cs = cmap.get((s["var"], s["level"]))
+                if cs:
+                    ax.plot(cs["auroc"], y, mk, color=col, ms=2.9, alpha=0.9, mec="white",
+                            mew=0.3, zorder=6)
             yticks.append(y); ylabels.append(f"{s['level']} (n={s.get('n_cases')})  {au:.3f}")
         y += 1
     ax.axvline(overall["auroc"], color=S.C["persist"], lw=0.9, ls="--")
