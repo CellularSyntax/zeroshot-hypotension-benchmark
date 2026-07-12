@@ -12,7 +12,7 @@
 \date{\today}
 \begin{document}
 \maketitle
-\noindent This document bundles every figure and table of the VitalDB analysis. All comparisons are on identical matched test windows (canonical 60/20/20 subject split); inference is case-clustered bootstrap throughout.
+\noindent This document bundles every figure and table of the analysis. Supervised baselines are evaluated on all cases via 5-fold subject-level out-of-fold cross-validation; TiRex-2 is zero-shot (inherently held-out). Cross-dataset transfer (Fig.~6, Table~7) uses the external MOVER cohort. Inference is case-clustered bootstrap throughout.
 \clearpage
 \section{Figures}
 \begin{figure}[H]\centering
@@ -34,6 +34,10 @@
 \begin{figure}[H]\centering
 \includegraphics[width=\linewidth]{Fig5_clinical_robustness.pdf}
 \caption{Clinical translation and robustness: early-warning lead time, severity gradient, subgroup AUROC forest, and operating characteristics.}
+\end{figure}
+\begin{figure}[H]\centering
+\includegraphics[width=\linewidth]{Fig6_transfer.pdf}
+\caption{Cross-dataset transfer / external validation (covariate-free, M0). Impending-hypotension AUROC vs horizon on each test cohort: (a) VitalDB, (b) the external MOVER cohort. TiRex-2 (zero-shot, training-free) is the bold teal anchor on both; supervised TFT/PatchTST are shown in-domain (solid, held-out 5-fold OOF) versus transferred from the other cohort (dashed, open marker). Shaded band = TiRex-2 case-clustered 95\% CI. VitalDB in-domain is at 15\,s cadence; all transferred and MOVER series are at the harmonised 60\,s cadence.}
 \end{figure}
 \begin{figure}[H]\centering
 \includegraphics[width=\linewidth]{FigS_training_curves.pdf}
@@ -102,18 +106,18 @@ Hypotension prevalence @15 min, \% & 18.4 \\
 \end{table}
 
 \begin{table}[H]\centering\footnotesize
-\caption{Matched hypotension AUROC on identical held-out test subjects (n=533 subjects, canonical 60/20/20 split). Zero-shot TiRex-2 vs TFT \& PatchTST trained on the same windows/splits (M1 = with drug covariate, M0 = without); foils are external references.}
+\caption{Matched hypotension AUROC on held-out cases (n=2665 subjects; all cases, 5-fold out-of-fold CV; $\pm$SD is across folds). Zero-shot TiRex-2 vs TFT \& PatchTST trained on the same windows (M1 = with drug covariate, M0 = without); CIs are case-clustered bootstrap; foils are external references.}
 \begin{adjustbox}{max width=\textwidth}
 \begin{tabular}{llllllll}
 \toprule
 \textbf{Horizon (min)} & \textbf{TiRex-2 zero-shot [95\% CI]} & \textbf{TFT M1 [95\% CI]} & \textbf{PatchTST M1 [95\% CI]} & \textbf{TFT M0} & \textbf{PatchTST M0} & \textbf{Kapral ext.} & \textbf{Zhu ext.} \\
 \midrule
-1 & 0.986 [0.982, 0.989] & 0.982 [0.976, 0.987] & 0.981 [0.975, 0.986] & 0.982 & 0.982 & --- & --- \\
-3 & 0.954 [0.945, 0.962] & 0.945 [0.935, 0.954] & 0.953 [0.944, 0.962] & 0.941 & 0.951 & --- & --- \\
-5 & 0.932 [0.921, 0.942] & 0.925 [0.913, 0.936] & 0.940 [0.930, 0.949] & 0.915 & 0.927 & 0.903 & 0.904 \\
-7 & 0.907 [0.893, 0.919] & 0.903 [0.890, 0.915] & 0.921 [0.909, 0.931] & 0.892 & 0.900 & 0.867 & --- \\
-10 & 0.887 [0.873, 0.900] & 0.890 [0.875, 0.902] & 0.908 [0.895, 0.920] & 0.869 & 0.881 & --- & 0.892 \\
-15 & 0.857 [0.841, 0.871] & 0.866 [0.849, 0.880] & 0.886 [0.872, 0.899] & 0.842 & 0.860 & --- & 0.882 \\
+1 & 0.986 [0.984, 0.987] & 0.982 [0.980, 0.985] $\pm$0.003 & 0.983 [0.980, 0.985] $\pm$0.002 & 0.984 & 0.982 & --- & --- \\
+3 & 0.955 [0.951, 0.958] & 0.947 [0.943, 0.951] $\pm$0.003 & 0.956 [0.952, 0.959] $\pm$0.005 & 0.945 & 0.947 & --- & --- \\
+5 & 0.929 [0.924, 0.934] & 0.923 [0.918, 0.929] $\pm$0.005 & 0.937 [0.933, 0.941] $\pm$0.005 & 0.913 & 0.920 & 0.903 & 0.904 \\
+7 & 0.905 [0.900, 0.911] & 0.903 [0.898, 0.909] $\pm$0.004 & 0.918 [0.914, 0.923] $\pm$0.005 & 0.888 & 0.897 & 0.867 & --- \\
+10 & 0.877 [0.871, 0.883] & 0.881 [0.876, 0.887] $\pm$0.004 & 0.898 [0.893, 0.903] $\pm$0.005 & 0.858 & 0.871 & --- & 0.892 \\
+15 & 0.849 [0.842, 0.855] & 0.860 [0.854, 0.866] $\pm$0.003 & 0.875 [0.869, 0.881] $\pm$0.004 & 0.831 & 0.846 & --- & 0.882 \\
 \bottomrule
 \end{tabular}
 \end{adjustbox}
@@ -126,12 +130,12 @@ Hypotension prevalence @15 min, \% & 18.4 \\
 \toprule
 \textbf{Horizon (min)} & \textbf{CRPS TiRex-2} & \textbf{CRPS TFT} & \textbf{CRPS PatchTST} & \textbf{MAE TiRex-2 (mmHg)} & \textbf{MAE TFT (mmHg)} & \textbf{MAE PatchTST (mmHg)} \\
 \midrule
-1 & 1.268 & 1.313 & 1.302 & 3.06 & 3.15 & 3.15 \\
-3 & 1.832 & 1.777 & 1.735 & 4.47 & 4.33 & 4.25 \\
-5 & 2.211 & 2.058 & 2.002 & 5.43 & 5.08 & 4.96 \\
-7 & 2.486 & 2.240 & 2.185 & 6.13 & 5.56 & 5.43 \\
-10 & 2.797 & 2.444 & 2.389 & 6.91 & 6.10 & 5.96 \\
-15 & 3.164 & 2.678 & 2.633 & 7.82 & 6.71 & 6.60 \\
+1 & 1.251 & 1.311 & 1.281 & 3.03 & 3.15 & 3.10 \\
+3 & 1.827 & 1.779 & 1.726 & 4.46 & 4.35 & 4.24 \\
+5 & 2.221 & 2.071 & 2.004 & 5.46 & 5.11 & 4.97 \\
+7 & 2.515 & 2.273 & 2.200 & 6.20 & 5.65 & 5.48 \\
+10 & 2.839 & 2.482 & 2.407 & 7.01 & 6.20 & 6.02 \\
+15 & 3.213 & 2.716 & 2.656 & 7.95 & 6.82 & 6.68 \\
 \bottomrule
 \end{tabular}
 \end{adjustbox}
@@ -156,18 +160,40 @@ Hypotension prevalence @15 min, \% & 18.4 \\
 \end{table}
 
 \begin{table}[H]\centering\footnotesize
+\caption{Cross-dataset transfer of impending-hypotension prediction (covariate-free, M0; AUROC, all cases). Supervised baselines are shown in-domain (held-out 5-fold OOF on the training cohort) and transferred (all-train checkpoint applied to the other cohort); TiRex-2 is zero-shot on both. Cells marked 'pending' await the corresponding in-domain cross-validation run. 95\% CIs are in Fig. 6. VitalDB in-domain is at 15 s cadence; all transferred and MOVER results are at the harmonised 60 s cadence.}
+\begin{adjustbox}{max width=\textwidth}
+\begin{tabular}{llllllll}
+\toprule
+\textbf{Test cohort} & \textbf{Model (training source)} & \textbf{1 min} & \textbf{3 min} & \textbf{5 min} & \textbf{7 min} & \textbf{10 min} & \textbf{15 min} \\
+\midrule
+VitalDB & TiRex-2 (zero-shot) & 0.986 & 0.953 & 0.924 & 0.900 & 0.872 & 0.846 \\
+ & TFT (in-domain) & 0.983 & 0.945 & 0.913 & 0.888 & 0.858 & 0.831 \\
+ & TFT (trained MOVER) & 0.964 & 0.924 & 0.897 & 0.874 & 0.849 & 0.825 \\
+ & PatchTST (in-domain) & 0.982 & 0.947 & 0.920 & 0.897 & 0.870 & 0.846 \\
+ & PatchTST (trained MOVER) & 0.967 & 0.928 & 0.900 & 0.877 & 0.851 & 0.832 \\
+MOVER & TiRex-2 (zero-shot) & 0.949 & 0.922 & 0.902 & 0.887 & 0.875 & 0.857 \\
+ & TFT (in-domain) & pending & pending & pending & pending & pending & pending \\
+ & TFT (trained VitalDB) & 0.940 & 0.914 & 0.895 & 0.881 & 0.866 & 0.846 \\
+ & PatchTST (in-domain) & pending & pending & pending & pending & pending & pending \\
+ & PatchTST (trained VitalDB) & 0.939 & 0.912 & 0.895 & 0.881 & 0.868 & 0.851 \\
+\bottomrule
+\end{tabular}
+\end{adjustbox}
+\end{table}
+
+\begin{table}[H]\centering\footnotesize
 \caption{Paired, case-clustered bootstrap significance tests for the key claims (2000 resamples; cases resampled with replacement; each comparison paired on identical windows, differenced within resample). *** $p<0.001$, ** $p<0.01$, * $p<0.05$, n.s. not significant.}
 \begin{adjustbox}{max width=\textwidth}
 \begin{tabular}{llllll}
 \toprule
 \textbf{Test} & \textbf{Comparison} & \textbf{Estimate} & \textbf{95\% CI} & \textbf{p} & \textbf{sig} \\
 \midrule
-Covariate benefit vs 0 (CE, transition 7 min) & TiRex-2 & +1.29\% & [+0.69, +1.90] & $<$0.001 & *** \\
- & TFT & +7.75\% & [+6.40, +9.04] & $<$0.001 & *** \\
- & PatchTST & +11.79\% & [+10.34, +13.16] & $<$0.001 & *** \\
-Covariate benefit, between-model (CE, transition 7 min) & TFT - TiRex-2 & +6.45\% & [+5.13, +7.67] & $<$0.001 & *** \\
- & PatchTST - TiRex-2 & +10.49\% & [+9.06, +11.81] & $<$0.001 & *** \\
- & PatchTST - TFT & +4.04\% & [+2.88, +5.16] & $<$0.001 & *** \\
+Covariate benefit vs 0 (CE, transition 7 min) & TiRex-2 & +1.15\% & [+0.84, +1.47] & $<$0.001 & *** \\
+ & TFT & +7.12\% & [+6.57, +7.68] & $<$0.001 & *** \\
+ & PatchTST & +12.48\% & [+11.87, +13.10] & $<$0.001 & *** \\
+Covariate benefit, between-model (CE, transition 7 min) & TFT - TiRex-2 & +5.98\% & [+5.38, +6.54] & $<$0.001 & *** \\
+ & PatchTST - TiRex-2 & +11.33\% & [+10.70, +11.97] & $<$0.001 & *** \\
+ & PatchTST - TFT & +5.35\% & [+4.83, +5.86] & $<$0.001 & *** \\
 Zero-shot AUROC difference (Fig 3) & TiRex-2 - Chronos-Bolt @5min & +0.008 & [+0.002, +0.014] & 0.013 & * \\
  & TiRex-2 - Chronos-Bolt @10min & +0.011 & [+0.004, +0.019] & 0.003 & ** \\
  & TiRex-2 - Chronos-Bolt @15min & +0.008 & [+0.001, +0.015] & 0.039 & * \\
@@ -177,12 +203,12 @@ Zero-shot AUROC difference (Fig 3) & TiRex-2 - Chronos-Bolt @5min & +0.008 & [+0
  & TiRex-2 - Moirai-1.1-R @5min & +0.010 & [+0.003, +0.016] & 0.004 & ** \\
  & TiRex-2 - Moirai-1.1-R @10min & +0.008 & [+0.000, +0.016] & 0.042 & * \\
  & TiRex-2 - Moirai-1.1-R @15min & +0.010 & [+0.001, +0.018] & 0.027 & * \\
-Trained-SOTA AUROC difference (Fig 4) & TiRex-2 - TFT @5min & +0.006 & [-0.001, +0.013] & 0.084 & n.s. \\
- & TiRex-2 - TFT @7min & +0.004 & [-0.004, +0.013] & 0.355 & n.s. \\
- & TiRex-2 - TFT @15min & -0.009 & [-0.018, +0.000] & 0.064 & n.s. \\
- & TiRex-2 - PatchTST @5min & -0.009 & [-0.016, -0.002] & 0.015 & * \\
- & TiRex-2 - PatchTST @7min & -0.014 & [-0.023, -0.005] & $<$0.001 & *** \\
- & TiRex-2 - PatchTST @15min & -0.029 & [-0.039, -0.019] & $<$0.001 & *** \\
+Trained-SOTA AUROC difference (Fig 4) & TiRex-2 - TFT @5min & +0.006 & [+0.002, +0.009] & 0.002 & ** \\
+ & TiRex-2 - TFT @7min & +0.002 & [-0.002, +0.005] & 0.337 & n.s. \\
+ & TiRex-2 - TFT @15min & -0.011 & [-0.016, -0.007] & $<$0.001 & *** \\
+ & TiRex-2 - PatchTST @5min & -0.008 & [-0.012, -0.005] & $<$0.001 & *** \\
+ & TiRex-2 - PatchTST @7min & -0.013 & [-0.017, -0.010] & $<$0.001 & *** \\
+ & TiRex-2 - PatchTST @15min & -0.026 & [-0.031, -0.022] & $<$0.001 & *** \\
 \bottomrule
 \end{tabular}
 \end{adjustbox}

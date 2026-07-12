@@ -40,6 +40,13 @@ FIGURES = [
     ("Fig5_clinical_robustness",
      "Clinical translation and robustness: early-warning lead time, severity gradient, subgroup "
      "AUROC forest, and operating characteristics."),
+    ("Fig6_transfer",
+     "Cross-dataset transfer / external validation (covariate-free, M0). Impending-hypotension AUROC "
+     "vs horizon on each test cohort: (a) VitalDB, (b) the external MOVER cohort. TiRex-2 (zero-shot, "
+     "training-free) is the bold teal anchor on both; supervised TFT/PatchTST are shown in-domain "
+     "(solid, held-out 5-fold OOF) versus transferred from the other cohort (dashed, open marker). "
+     "Shaded band = TiRex-2 case-clustered 95\\% CI. VitalDB in-domain is at 15\\,s cadence; all "
+     "transferred and MOVER series are at the harmonised 60\\,s cadence."),
     ("FigS_training_curves",
      "Supplementary. Training/validation pinball-loss curves for the supervised baselines "
      "(TFT, PatchTST), M1 (with drug covariate) and M0 (without); convergence without overfitting."),
@@ -53,6 +60,7 @@ TABLES = [
     ("Table4_matched", None),
     ("Table5_matched_forecast", None),
     ("Table6_zeroshot", None),
+    ("Table7_transfer", None),
     ("TableS_stats",
      "Paired, case-clustered bootstrap significance tests for the key claims (2000 resamples; cases "
      "resampled with replacement; each comparison paired on identical windows, differenced within "
@@ -120,9 +128,10 @@ def main():
         r"\large Results bundle: figures, tables and statistics}",
         r"\author{}", r"\date{\today}",
         r"\begin{document}", r"\maketitle",
-        r"\noindent This document bundles every figure and table of the VitalDB analysis. "
-        r"All comparisons are on identical matched test windows (canonical 60/20/20 subject split); "
-        r"inference is case-clustered bootstrap throughout.",
+        r"\noindent This document bundles every figure and table of the analysis. Supervised "
+        r"baselines are evaluated on all cases via 5-fold subject-level out-of-fold cross-validation; "
+        r"TiRex-2 is zero-shot (inherently held-out). Cross-dataset transfer (Fig.~6, Table~7) uses the "
+        r"external MOVER cohort. Inference is case-clustered bootstrap throughout.",
         r"\clearpage", r"\section{Figures}",
     ]
     for name, cap in FIGURES:
