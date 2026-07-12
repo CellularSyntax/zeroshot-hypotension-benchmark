@@ -1,11 +1,12 @@
 """Publication figures + tables for the TiRex-2 / VitalDB paper (Nature Medicine style).
 
-Classification-first framing:
+Narrative arc (zero-shot foundation model as the lead):
   Fig 1  Study design & cohort
   Fig 2  Forecast accuracy & the value of the known future drug covariate
-  Fig 3  Impending-hypotension prediction: zero-shot TiRex-2 vs supervised SOTA  (headline)
-  Fig 4  Clinical translation & robustness
-  Tables 1-3  cohort characteristics | accuracy | classification-vs-foils
+  Fig 3  Zero-shot foundation-model benchmark: TiRex-2 vs Chronos/TimesFM/Moirai  (headline)
+  Fig 4  Impending-hypotension prediction: zero-shot TiRex-2 vs supervised SOTA
+  Fig 5  Clinical translation & robustness
+  Tables 1-6  cohort | accuracy | classification-vs-foils | matched-trained | matched-forecast | zero-shot
 
 Reads the finished full-cohort outputs already in results/ (tag=all2873 primary; the
 covrate/pressor arms for the covariate-representation panel). Styling lives in paper_style.
@@ -251,8 +252,11 @@ def _example_panel(ax, ex, i, title):
 # ══════════════════════════════════════════════════════════════════════════════
 def figure2(tag):
     prim = load_primary(tag)
-    fig, axs = plt.subplot_mosaic([["a", "b"], ["c", "d"]], figsize=(S.W2, S.W2*0.72),
-                                  gridspec_kw=dict(hspace=0.55, wspace=0.35))
+    # themed 2-row layout: top = accuracy (a, d), bottom = value of the drug covariate (b, c, e)
+    fig, axs = plt.subplot_mosaic([["a", "a", "a", "d", "d", "d"],
+                                   ["b", "b", "c", "c", "e", "e"]],
+                                  figsize=(S.W2, S.W2*0.64),
+                                  gridspec_kw=dict(hspace=0.52, wspace=1.05))
 
     # a — forecast accuracy head-to-head: zero-shot TiRex vs trained TFT (matched test, MAE)
     hs = MAIN_H
@@ -317,6 +321,29 @@ def figure2(tag):
     d = axs["d"]
     _kapral_panel(d, tag)
     S.panel_letter(d, "d")
+
+    # e — who can use the drug plan? covariate CRPS reduction by model class (transition, 7 min).
+    # Turns the modest ~1% into a *capability* story: only covariate-aware models benefit at all;
+    # the other zero-shot TSFMs are univariate (0% by construction); training amplifies the effect.
+    e = axs["e"]
+    tb = strat(prim, 7, "transition"); tx = tb["X_pct_withpast"]; tci = tb["X_pct_withpast_CI95"]
+    bars = [("Other zero-shot\nTSFMs", 0.0, None, "#9AA0A6"),          # Chronos/TimesFM/Moirai: univariate
+            ("TiRex-2\n(zero-shot)", tx, tci, S.C["M1"])]
+    for key, disp, col in [("tft", "TFT\n(trained)", TFT_COL), ("patchtst", "PatchTST\n(trained)", PATCH_COL)]:
+        v = _tft_xpct_t7(f"baseline-{key}_{tag}")
+        if v is not None:
+            bars.append((disp, v, None, col))
+    xpos = np.arange(len(bars))
+    for xi, (lab, v, ci, col) in zip(xpos, bars):
+        e.bar(xi, v, width=0.66, color=col, edgecolor="white", lw=0.5)
+        if ci is not None:
+            e.errorbar(xi, v, yerr=[[v - ci[0]], [ci[1] - v]], fmt="none", ecolor="#333", capsize=2.5, lw=1.0)
+        e.text(xi, v + 0.18, "0" if v == 0 else f"{v:+.1f}%", ha="center", va="bottom", fontsize=5.4)
+    e.axhline(0, color="#999", lw=0.7)
+    e.set_ylim(top=max(v for _, v, _, _ in bars) * 1.3 + 0.6)
+    e.set_xticks(xpos); e.set_xticklabels([b[0] for b in bars], fontsize=5.0)
+    S.finish(e, None, "CRPS reduction from\ndrug covariate (%)", "Who can use the drug plan?")
+    S.panel_letter(e, "e")
     S.save_fig(fig, "Fig2_accuracy_covariate")
 
 
@@ -354,7 +381,7 @@ def _kapral_panel(ax, tag):
 
 
 # ══════════════════════════════════════════════════════════════════════════════
-# FIGURE 3 — impending-hypotension prediction: zero-shot vs trained vs SOTA  (headline)
+# FIGURE 4 — impending-hypotension prediction: zero-shot vs trained vs SOTA
 # ══════════════════════════════════════════════════════════════════════════════
 TFT_COL = "#566573"     # slate — the trained TFT baseline
 PATCH_COL = "#3D5A80"   # steel blue — the trained PatchTST baseline
@@ -539,28 +566,29 @@ def figure3(tag):
     ax_bar.legend(handles=[Patch(facecolor=col, label=lab) for lab, col, _ in series_f],
                   loc="upper right", fontsize=5.0, framealpha=0.9); S.panel_letter(ax_bar, "f")
 
-    S.save_fig(fig, "Fig3_hypotension_vs_sota")
+    S.save_fig(fig, "Fig4_hypotension_vs_sota")
 
 
 # ══════════════════════════════════════════════════════════════════════════════
-# FIGURE 5 — zero-shot foundation-model benchmark (TiRex vs other TSFMs)
+# FIGURE 3 — zero-shot foundation-model benchmark (TiRex vs other TSFMs)  (headline)
 # ══════════════════════════════════════════════════════════════════════════════
 def figure_zeroshot(tag):
     """Among zero-shot TSFMs (no training), TiRex vs Chronos/TimesFM/Moirai on the identical
-    matched test split: (a) hypotension AUROC and (b) forecasting CRPS vs horizon. TiRex is the
-    only one that ingests the known future drug covariate."""
+    matched test split: (a) hypotension AUROC, (b) forecasting CRPS, (c) calibration @10 min,
+    (d) AUPRC vs horizon. TiRex leads on both tasks and uniquely ingests the drug covariate."""
     zs = available_zeroshot(tag)
     if not zs:
-        print("  (no zero-shot TSFM results — skip Fig 5)", flush=True); return
+        print("  (no zero-shot TSFM results — skip Fig 3)", flush=True); return
     for z in zs:
         z["M"] = load_matched(z["tag"]); z["rows"], _ = H.load_rows(z["tag"])
     M = zs[0]["M"]; hs = sorted(int(k) for k in M["per_horizon"])
     c2s = H.caseid_to_subject(); trows, _ = H.load_rows(tag)
     tsub = canonical_test_subjects(trows, c2s)
 
-    fig, (axa, axb) = plt.subplots(1, 2, figsize=(S.W2, S.W2 * 0.46),
-                                   gridspec_kw=dict(wspace=0.26, left=0.09, right=0.98, top=0.9, bottom=0.16))
+    fig, axs = plt.subplot_mosaic([["a", "b"], ["c", "d"]], figsize=(S.W2, S.W2 * 0.82),
+                                  gridspec_kw=dict(hspace=0.5, wspace=0.28))
     # a — hypotension AUROC vs horizon
+    axa = axs["a"]
     ta = [M["per_horizon"][str(h)]["tirex_M1"]["auroc"] for h in hs]
     tlo = [M["per_horizon"][str(h)]["tirex_M1"]["ci"][0] for h in hs]
     thi = [M["per_horizon"][str(h)]["tirex_M1"]["ci"][1] for h in hs]
@@ -574,6 +602,7 @@ def figure_zeroshot(tag):
     axa.legend(loc="upper right", fontsize=5.6); S.panel_letter(axa, "a")
 
     # b — forecasting CRPS vs horizon (lower is better)
+    axb = axs["b"]
     crps_tx = _mean_metric_by_h(trows, c2s, tsub, "crps_M1", hs)
     axb.plot(hs, crps_tx, "-o", color=S.C["M1"], lw=2.2, ms=4, label="TiRex-2 (ours)", zorder=6)
     for z in zs:
@@ -583,11 +612,39 @@ def figure_zeroshot(tag):
     S.finish(axb, "forecast horizon (min)", "CRPS (mmHg)", "Probabilistic forecast")
     axb.legend(loc="upper left", fontsize=5.6); S.panel_letter(axb, "b")
 
-    S.save_fig(fig, "Fig5_zeroshot_tsfm")
+    # c — calibration (reliability) at 10 min: predicted risk vs observed hypotension frequency
+    axc = axs["c"]
+    y, s = _scores_subj(trows, c2s, tsub, 10)
+    mp, of, _, ece = H.calibration(y, s, n_bins=10)
+    axc.plot([0, 1], [0, 1], color="#BBB", lw=0.7, ls=":")
+    for z in zs:
+        yz, sz = _scores_subj(z["rows"], c2s, tsub, 10)
+        mpz, ofz, _, ecez = H.calibration(yz, sz, n_bins=10)
+        axc.plot(mpz, ofz, z["ls"], marker=z["mk"], color=z["col"], ms=2.6, lw=1.1,
+                 label=f"{z['disp']} ({ecez:.3f})")
+    axc.plot(mp, of, "-o", color=S.C["M1"], ms=3, lw=2.0, label=f"TiRex-2 ({ece:.3f})", zorder=6)
+    axc.set_xlim(0, 1); axc.set_ylim(0, 1)
+    S.finish(axc, "predicted risk", "observed frequency", "Calibration @10 min (ECE)")
+    axc.legend(loc="upper left", fontsize=5.4); S.panel_letter(axc, "c")
+
+    # d — AUPRC vs horizon with rising-prevalence chance line
+    axd = axs["d"]
+    ap = [H.auprc(*_scores_subj(trows, c2s, tsub, h)) for h in hs]
+    prev = [float(_scores_subj(trows, c2s, tsub, h)[0].mean()) for h in hs]
+    axd.plot(hs, ap, "-o", color=S.C["M1"], lw=2.2, ms=4, label="TiRex-2 (ours)", zorder=6)
+    for z in zs:
+        apz = [H.auprc(*_scores_subj(z["rows"], c2s, tsub, h)) for h in hs]
+        axd.plot(hs, apz, z["ls"], marker=z["mk"], color=z["col"], ms=3, lw=1.2, label=z["disp"])
+    axd.plot(hs, prev, ":", color=S.C["persist"], lw=1.0, label="prevalence (chance)")
+    axd.set_xticks(hs); axd.set_ylim(0, 1)
+    S.finish(axd, "forecast horizon (min)", "AUPRC", "Precision–recall")
+    axd.legend(loc="upper right", fontsize=5.4); S.panel_letter(axd, "d")
+
+    S.save_fig(fig, "Fig3_zeroshot_tsfm")
 
 
 # ══════════════════════════════════════════════════════════════════════════════
-# FIGURE 4 — clinical translation & robustness
+# FIGURE 5 — clinical translation & robustness
 # ══════════════════════════════════════════════════════════════════════════════
 def figure4(tag):
     clin = load_clinical(tag); hyp = load_hypo(tag); sg = load_subgroup(tag, 5)
@@ -642,7 +699,7 @@ def figure4(tag):
     _forest(axs["c"], sg)
     S.panel_letter(axs["c"], "c", dx=0.02, dy=1.04)
 
-    S.save_fig(fig, "Fig4_clinical_robustness")
+    S.save_fig(fig, "Fig5_clinical_robustness")
 
 
 def _forest(ax, sg):
@@ -902,9 +959,9 @@ def main():
     print(f"[paper] tag={TAG}  font={S.SANS}", flush=True)
     print("[paper] Figure 1 ..."); figure1(TAG)
     print("[paper] Figure 2 ..."); figure2(TAG)
-    print("[paper] Figure 3 ..."); figure3(TAG)
-    print("[paper] Figure 4 ..."); figure4(TAG)
-    print("[paper] Figure 5 (zero-shot TSFM benchmark) ..."); figure_zeroshot(TAG)
+    print("[paper] Figure 3 (zero-shot TSFM benchmark) ..."); figure_zeroshot(TAG)
+    print("[paper] Figure 4 (hypotension vs supervised SOTA) ..."); figure3(TAG)
+    print("[paper] Figure 5 (clinical translation) ..."); figure4(TAG)
     print("[paper] Supp: training curves ..."); figure_s_training(TAG)
     print("[paper] Tables ..."); table1_cohort(TAG); table2_accuracy(TAG); table3_classification(TAG)
     table4_matched(TAG); table5_matched_forecast(TAG); table6_zeroshot(TAG)

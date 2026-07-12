@@ -161,15 +161,17 @@ Outputs (Nature-style, PDF + 600-dpi PNG in `outputs/figs/paper/`, tables in `re
 | Artifact | Content |
 |---|---|
 | Fig 1 | study design, cohort funnel, example forecasts |
-| Fig 2 | (a) forecast accuracy TiRex vs TFT; (b) covariate value by window type, TiRex+TFT; (c) CE/RATE/pressor + TFT overlay; (d) MAE vs Kapral |
-| Fig 3 | hypotension: ROC, AUROC-vs-horizon, calibration, PR, decision curve, head-to-head bars — TiRex vs TFT vs foils |
-| Fig 4 | lead time, severity gradient, subgroup forest, operating characteristics |
-| Fig S | TFT M1/M0 training curves |
+| Fig 2 | (a) forecast accuracy TiRex vs TFT; (b) covariate value by window type; (c) CE/RATE/pressor forest; (d) MAE vs Kapral; (e) covariate exploitation by model class (0% zero-shot / ~1% TiRex / ~9–14% trained) |
+| Fig 3 | **zero-shot TSFM benchmark (headline)** — TiRex vs Chronos/TimesFM/Moirai: (a) AUROC, (b) CRPS, (c) calibration @10 min, (d) AUPRC vs horizon |
+| Fig 4 | hypotension vs supervised SOTA: ROC, AUROC-vs-horizon, calibration, PR, decision curve, head-to-head bars — TiRex vs TFT vs PatchTST vs foils |
+| Fig 5 | clinical translation: lead time, severity gradient, subgroup forest, operating characteristics |
+| Fig S | TFT + PatchTST M1/M0 training curves |
 | Table 1 | cohort characteristics (n=2,708 windows-contributing) |
 | Table 2 | forecast accuracy + covariate value (TiRex) |
 | Table 3 | hypotension classification vs foils |
-| Table 4 | matched classification AUROC (TiRex vs TFT vs foils) |
-| Table 5 | matched forecasting CRPS/MAE (TiRex vs TFT) |
+| Table 4 | matched classification AUROC (TiRex vs TFT vs PatchTST vs foils) |
+| Table 5 | matched forecasting CRPS/MAE (TiRex vs TFT vs PatchTST) |
+| Table 6 | zero-shot TSFM AUROC (TiRex vs Chronos/TimesFM/Moirai) |
 
 `paper_figures.py` degrades gracefully: panels/tables that need a baseline (Fig 2c TFT overlay,
 Fig 3 TFT curves, Tables 4/5, Fig S) are drawn only if the corresponding baseline files are present.
