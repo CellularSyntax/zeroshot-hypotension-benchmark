@@ -520,14 +520,16 @@ def figure3(tag):
     def arr(key, field):
         return [M["per_horizon"][str(h)][key][field] if M["per_horizon"][str(h)][key] else np.nan for h in hs]
     ta = arr("tirex_M1", "auroc"); tlo = [M["per_horizon"][str(h)]["tirex_M1"]["ci"][0] for h in hs]; thi = [M["per_horizon"][str(h)]["tirex_M1"]["ci"][1] for h in hs]
-    ax_auc.fill_between(hs, tlo, thi, color=S.C["M1"], alpha=0.13, lw=0)
-    ax_auc.plot(hs, ta, "-o", color=S.C["M1"], lw=2.0, label="TiRex-2 (zero-shot, ours)")
+    # trained comparators first (muted, thinner) so the TiRex-2 line reads as the protagonist on top
     for b in bl:                                               # every trained baseline (matched)
         ph = b["M"]["per_horizon"]
         fa = [ph[str(h)]["tft_M1"]["auroc"] if ph[str(h)]["tft_M1"] else np.nan for h in hs]
         flo = [ph[str(h)]["tft_M1"]["ci"][0] for h in hs]; fhi = [ph[str(h)]["tft_M1"]["ci"][1] for h in hs]
-        ax_auc.fill_between(hs, flo, fhi, color=b["col"], alpha=0.11, lw=0)
-        ax_auc.plot(hs, fa, b["ls"], marker=b["mk"], color=b["col"], ms=3.3, label=f"{b['disp']} (trained, ours)")
+        ax_auc.fill_between(hs, flo, fhi, color=b["col"], alpha=0.08, lw=0, zorder=1)
+        ax_auc.plot(hs, fa, b["ls"], marker=b["mk"], color=b["col"], ms=3.1, lw=1.3, alpha=0.8,
+                    zorder=4, label=f"{b['disp']} (trained, ours)")
+    ax_auc.fill_between(hs, tlo, thi, color=S.C["M1"], alpha=0.18, lw=0, zorder=2)
+    ax_auc.plot(hs, ta, "-o", color=S.C["M1"], lw=2.6, ms=4.6, zorder=6, label="TiRex-2 (zero-shot, ours)")
     for h, (ki, ke) in S.KAPRAL_AUROC.items():
         ax_auc.plot(h, ke, "D", color=S.C["kapral"], ms=5, mec="white", mew=0.5, zorder=6)
     ax_auc.plot([], [], "D", color=S.C["kapral"], label="Kapral (TFT, ext.)")
@@ -536,7 +538,10 @@ def figure3(tag):
     ax_auc.plot([], [], "s", color=S.C["zhu"], label="Zhu (Transformer, ext.)")
     S.finish(ax_auc, "forecast horizon (min)", "hypotension AUROC", "Zero-shot vs trained vs SOTA")
     ax_auc.set_xticks(hs); ax_auc.set_ylim(0.80, 1.0)
-    ax_auc.legend(loc="upper right", fontsize=5.4); S.panel_letter(ax_auc, "b")
+    _h, _l = ax_auc.get_legend_handles_labels()          # TiRex drawn last (on top) -> pull it first in legend
+    _o = sorted(range(len(_l)), key=lambda i: 0 if "TiRex" in _l[i] else 1)
+    ax_auc.legend([_h[i] for i in _o], [_l[i] for i in _o], loc="upper right", fontsize=5.4)
+    S.panel_letter(ax_auc, "b")
 
     # c — calibration at 5 min: TiRex vs each trained baseline (matched test)
     y5, s5 = _scores_subj(rows, c2s, test_subj, 5)
@@ -595,18 +600,29 @@ def figure3(tag):
     series_f += [("Kapral (ext.)", S.C["kapral"], au_of(M, "kapral_ext")),
                  ("Zhu (ext.)", S.C["zhu"], au_of(M, "zhu_ext"))]
     nser = len(series_f); w = min(0.20, 0.86 / nser); x = np.arange(len(groups))
+    tir_val = {h: series_f[0][2](h) for h in groups}          # TiRex-2 reference level per group
     for j, (lab, col, fn) in enumerate(series_f):
+        is_tir = (j == 0)                                     # TiRex is the protagonist -> make it pop
         for xi, h in zip(x + (j - (nser - 1) / 2) * w, groups):
             v = fn(h)
             if v is None:
                 continue
-            ax_bar.bar(xi, v, width=w, color=col, edgecolor="white", lw=0.4)
-            ax_bar.text(xi, v + 0.004, f"{v:.3f}", ha="center", va="bottom", fontsize=4.6, rotation=90)
+            ax_bar.bar(xi, v, width=w, color=col, alpha=(1.0 if is_tir else 0.65),
+                       edgecolor=(S.C["ink"] if is_tir else "white"), lw=(1.1 if is_tir else 0.4),
+                       zorder=(4 if is_tir else 3))
+    # dashed TiRex-2 line across each group: instantly shows which bars clear the zero-shot level
+    for xi, h in zip(x, groups):
+        half = (nser / 2 + 0.1) * w
+        ax_bar.plot([xi - half, xi + half], [tir_val[h], tir_val[h]], ls=(0, (4, 2)),
+                    color=S.C["M1"], lw=1.0, zorder=5)
     ax_bar.set_xticks(x); ax_bar.set_xticklabels([f"{g} min" for g in groups])
-    ax_bar.set_ylim(0.80, 1.0)
+    ax_bar.set_ylim(0.80, 1.02)
     S.finish(ax_bar, None, "hypotension AUROC", "Head-to-head @5 / 7 min")
-    ax_bar.legend(handles=[Patch(facecolor=col, label=lab) for lab, col, _ in series_f],
-                  loc="upper right", fontsize=5.0, framealpha=0.9); S.panel_letter(ax_bar, "f")
+    handles = [Patch(facecolor=S.C["M1"], edgecolor=S.C["ink"], lw=1.1, label="TiRex-2 (zero-shot)")]
+    handles += [Patch(facecolor=col, alpha=0.65, label=lab) for lab, col, _ in series_f[1:]]
+    ax_bar.legend(handles=handles, loc="upper center", ncol=2, fontsize=5.0, framealpha=0.9,
+                  handlelength=1.3, columnspacing=1.1, borderpad=0.4)
+    S.panel_letter(ax_bar, "f")
 
     S.save_fig(fig, "Fig4_hypotension_vs_sota")
 
