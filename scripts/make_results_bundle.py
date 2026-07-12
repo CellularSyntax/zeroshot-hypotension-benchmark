@@ -69,8 +69,10 @@ FIGURES = [
      "Shaded band = TiRex-2 case-clustered 95\\% CI. VitalDB in-domain is at 15\\,s cadence; all "
      "transferred and MOVER series are at the harmonised 60\\,s cadence."),
     ("FigS_training_curves",
-     "Supplementary. Training/validation pinball-loss curves for the supervised baselines "
-     "(TFT, PatchTST), M1 (with drug covariate) and M0 (without); convergence without overfitting."),
+     "Supplementary. Per-fold training/validation pinball-loss curves --- all 5 cross-validation folds "
+     "overlaid --- for the supervised baselines (TFT, PatchTST) on both cohorts, VitalDB (development, "
+     "rows a--d) and MOVER (external, rows e--h), M1 (with drug covariate) and M0 (without). Validation "
+     "tracks training across every fold and cohort: convergence without overfitting."),
 ]
 
 # table name -> optional caption override (None => read from the .md first line)

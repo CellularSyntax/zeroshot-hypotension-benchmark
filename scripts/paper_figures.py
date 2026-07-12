@@ -794,7 +794,7 @@ def figure4(tag):
         except (KeyError, TypeError):
             return None
     OP_KEYS = [("sens", "Sensitivity"), ("ppv", "PPV"), ("npv", "NPV"), ("f1", "F1")]
-    _mini_strip(fig, cell_op, OP_KEYS, MODELS, op_val, (0.25, 1.0), "b",
+    _mini_strip(fig, cell_op, OP_KEYS, MODELS, op_val, (0.25, 1.03), "b",
                 "value at spec ≥ 0.90", "Operating characteristics")
 
     # c — severity-stratified detection (BOTTOM strip): 1x4, one subplot per MAP threshold
@@ -805,7 +805,7 @@ def figure4(tag):
         return d["auroc"] if d else None
     SEV_KEYS = [("MAP<65 (≥1min)", "MAP < 65 mmHg"), ("MAP<55 (≥1min)", "MAP < 55 mmHg"),
                 ("MAP<50 (≥1min)", "MAP < 50 mmHg"), ("MAP<65 (≥5min, sustained)", "MAP < 65 mmHg, sustained")]
-    _mini_strip(fig, cell_sev, SEV_KEYS, MODELS, sev_val, (0.85, 1.0), "c",
+    _mini_strip(fig, cell_sev, SEV_KEYS, MODELS, sev_val, (0.85, 1.01), "c",
                 "hypotension AUROC", "Severity-stratified detection")
 
     # shared model legend (colours/markers match every panel) — bottom centre
@@ -1083,27 +1083,42 @@ def table6_zeroshot(tag):
 
 def figure_s_training(tag):
     """Supplementary: trained-baseline train/val pinball-loss curves (convergence, no overfitting).
-    One row per baseline (TFT, PatchTST, ...), columns = the M1 (with covariate) / M0 arms."""
+    One row per cohort x baseline (VitalDB / MOVER, TFT / PatchTST), columns = M1 / M0 arms."""
+    # (cohort label, history tag). MOVER's trained tag carries the cov suffix.
+    COHORTS = [("VitalDB", tag), ("MOVER", "mover_art_covmover_rate")]
     present = []
-    for b in MATCHED_BASELINES:
-        path = f"results/baseline_history_baseline-{b['key']}_{tag}.json"
-        if os.path.exists(path):
-            present.append((b["disp"], json.load(open(path))["arms"]))
+    for cohort, ctag in COHORTS:
+        for b in MATCHED_BASELINES:
+            path = f"results/baseline_history_baseline-{b['key']}_{ctag}.json"
+            if os.path.exists(path):
+                present.append((f"{cohort} · {b['disp']}", json.load(open(path))))
     if not present:
         print("  (no baseline_history_*.json — skip training-curve supplement)", flush=True); return
     nrow = len(present)
     fig, axs = plt.subplots(nrow, 2, figsize=(S.W2, S.W2 * 0.42 * nrow), squeeze=False,
                             gridspec_kw=dict(wspace=0.26, hspace=0.62))
-    letters = iter("abcdefgh")
-    for ri, (disp, arms) in enumerate(present):
+    letters = iter("abcdefghijklmnop")
+    for ri, (disp, hist) in enumerate(present):
+        folds = hist.get("fold_hist") or {}                  # 5-fold CV: one curve per fold
         for ci, (arm, lab) in enumerate([("M1", "with drug covariate"), ("M0", "no drug covariate")]):
-            ax = axs[ri][ci]; a = arms.get(arm)
-            if a:
-                c = a["curve"]; ep = [r["epoch"] for r in c]
-                ax.plot(ep, [r["train_pinball"] for r in c], "-", color=S.C["M1"], lw=1.3, label="train")
-                ax.plot(ep, [r["val_pinball"] for r in c], "-", color=S.C["M0"], lw=1.3, label="validation")
-                ax.legend(loc="upper right")
-            S.finish(ax, "epoch", "pinball loss (normalised)", f"{disp} {arm} — {lab}")
+            ax = axs[ri][ci]
+            if folds:                                        # all folds, so the CV is honestly shown
+                curves = [folds[fk][arm]["curve"] for fk in sorted(folds)
+                          if folds[fk].get(arm, {}).get("curve")]
+            else:                                            # non-CV fallback: single arm curve
+                a = hist.get("arms", {}).get(arm)
+                curves = [a["curve"]] if a and a.get("curve") else []
+            for k, c in enumerate(curves):
+                ep = [r["epoch"] for r in c]
+                ax.plot(ep, [r["train_pinball"] for r in c], "-", color=S.C["M1"], lw=0.8, alpha=0.5,
+                        label=("train" if k == 0 else None))
+                ax.plot(ep, [r["val_pinball"] for r in c], "-", color=S.C["M0"], lw=1.0, alpha=0.8,
+                        label=("validation" if k == 0 else None))
+            if curves:
+                ax.legend(loc="upper right", fontsize=6)
+            nf = len(curves)
+            ttl = f"{disp} {arm} — {lab}" + (f"  ({nf} folds)" if nf > 1 else "")
+            S.finish(ax, "epoch", "pinball loss (normalised)", ttl)
             S.panel_letter(ax, next(letters))
     S.save_fig(fig, "FigS_training_curves")
 
