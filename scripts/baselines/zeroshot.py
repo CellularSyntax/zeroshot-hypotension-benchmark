@@ -58,8 +58,10 @@ class ChronosAdapter(Adapter):
         self.pipe = BaseChronosPipeline.from_pretrained(self.repo, device_map=device, torch_dtype=dt)
         return self
     def forecast(self, contexts, futures, H):
+        # pass the context positionally — the param is named `context` in some versions and
+        # `inputs` in others; positional binds either. Returns (quantiles[B,H,Q], mean[B,H]).
         ctx = [self.torch.tensor(np.asarray(c, dtype=np.float32)) for c in contexts]
-        q, _ = self.pipe.predict_quantiles(context=ctx, prediction_length=H, quantile_levels=QLEVELS)
+        q, _ = self.pipe.predict_quantiles(ctx, prediction_length=H, quantile_levels=QLEVELS)
         q = q.float().cpu().numpy()             # [B, H, 9]
         return [np.sort(q[i].T, axis=0) for i in range(q.shape[0])]   # each [9, H], monotone
 
