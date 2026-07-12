@@ -134,15 +134,16 @@ def _cohort_flow(ax, flow, prim, hyp, n_cohort):
         (f"Cases with ≥ 1 window\nn = {n_cohort:,}", "#CFE3E7"),
         (f"Forecast windows\nn = {nw:,}", "#EAD9BD"),
     ]
-    box_h = 0.165; gap = 0.075; y = 0.98
+    n = len(steps); gap = 0.06
+    box_h = (1.0 - (n-1)*gap) / n          # fill the full cell height
     for i, (txt, col) in enumerate(steps):
-        top = y - i*(box_h+gap); bot = top - box_h
+        top = 1.0 - i*(box_h+gap); bot = top - box_h
         ax.add_patch(plt.Rectangle((0.04, bot), 0.92, box_h, transform=ax.transAxes,
                      facecolor=col, edgecolor="#777", lw=0.7, zorder=2))
         ax.text(0.5, (top+bot)/2, txt, transform=ax.transAxes, ha="center", va="center",
-                fontsize=6.4, zorder=3)
-        if i < len(steps)-1:
-            ax.annotate("", xy=(0.5, bot-gap+0.008), xytext=(0.5, bot-0.004),
+                fontsize=6.6, zorder=3)
+        if i < n-1:
+            ax.annotate("", xy=(0.5, bot-gap+0.006), xytext=(0.5, bot-0.004),
                         xycoords="axes fraction",
                         arrowprops=dict(arrowstyle="-|>", color="#666", lw=1.0))
     ax.set_ylim(0, 1)
