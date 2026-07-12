@@ -193,63 +193,81 @@ setup(0) ── cache ──> TiRex runs(1) ──> post-hoc(4) ─┐
 Regenerating figures after any run is just step 5 (seconds). The heavy steps (1–2) are
 deterministic given the seed, so reruns reproduce identical numbers.
 
-## MOVER external validation (SIS cohort)
+## 6. MOVER external validation + cross-dataset generalization
+
 MOVER support lives in `datasets/mover/`. The loader maps SIS columns onto VitalDB **canonical
 channel names** (`HRe`→`Solar8000/HR`, `Propofol  drip` rate→`Orchestra/PPF20_RATE`, …), and the
-pipeline is now loader-agnostic (`phase3_ablation.get_loader()` reads the `loader:` key in the
-config), so steps 1–5 run unchanged with the MOVER config and a `mover_*` covariate preset.
+pipeline is loader-agnostic (`phase3_ablation.get_loader()` reads the `loader:` key in the config),
+so every script runs unchanged with the MOVER config + a `mover_*` covariate preset.
+
+MOVER target = invasive `MAP_ART` (1-min, 60 s grid); cohort ≈ 1,866 (arterial ≥30 min + infusion),
+827 with a pressor. Split is case-level (`PID`; SIS has no patient ID). Covariate = derived
+propofol+remifentanil **rate** (`mover_rate`) or phenylephrine (`mover_pressor`).
+
+> **Ordering / the incremental-CSV trap.** `run_ablation` writes `ablation_windows_mover_art.csv`
+> *incrementally* (per chunk). Any job that `--match`es it (zero-shot sweep, CV baselines) must wait
+> for TiRex to FINISH — watch for `=== SHARD DONE tag=mover_art ... ===` — or chain with
+> `sbatch --dependency=afterok:<tirex_jobid> …`. Otherwise it locks onto a partial cohort.
 
 ```bash
-# 0. one-time cache build (CPU): streams the SIS tables -> per-PID .npz + clinical_data.csv + manifest
+# ── M0. one-time MOVER cache (CPU) ───────────────────────────────────────────────────
 sbatch slurm/build_mover_cache.sbatch
-#    inspect one case:  PYTHONPATH=datasets/mover python datasets/mover/mover_loader.py <PID>
+#   inspect one case:  PYTHONPATH=datasets/mover python datasets/mover/mover_loader.py <PID>
 
-# 1. TiRex-2 zero-shot on MOVER (GPU) — derived propofol+remi rate as the covariate
-COV=mover_rate    sbatch slurm/run_ablation.sbatch     # -> results/ablation_*_mover_art.*
-COV=mover_pressor sbatch slurm/run_ablation.sbatch     # phenylephrine -> ..._mover_pressor.*
-# (run_ablation's case-block maps mover_rate/mover_pressor to the MOVER config + --tag.)
+# ── M1. TiRex-2 zero-shot on MOVER (GPU) — produces mover_art.csv (the cohort others match) ──
+COV=mover_rate    sbatch slurm/run_ablation.sbatch     # -> results/*_mover_art.*
+COV=mover_pressor sbatch slurm/run_ablation.sbatch     # phenylephrine -> *_mover_pressor.*
 
-# 2. matched baselines on MOVER (GPU):
-MODEL=tft      COV=mover_rate CONFIG=datasets/mover/configs/data.yaml \
-    MATCH=results/ablation_windows_mover_art.csv sbatch slurm/train_baseline.sbatch
-# 3. zero-shot TSFM sweep on MOVER: MODEL=chronos MATCH=results/ablation_windows_mover_art.csv \
-#      COV=mover_rate CONFIG=datasets/mover/configs/data.yaml sbatch slurm/run_zeroshot.sbatch
-# 4-5. post-hoc + figures: same scripts with the mover_art tag.
+# ── M2. zero-shot TSFM sweep on MOVER (GPU; CHAIN behind M1) ──────────────────────────
+for M in chronos timesfm moirai; do
+  MODEL=$M MATCH=results/ablation_windows_mover_art.csv COV=mover_rate \
+    CONFIG=datasets/mover/configs/data.yaml \
+    sbatch --dependency=afterok:<M1_jobid> slurm/run_zeroshot.sbatch
+done
 ```
-MOVER target = invasive `MAP_ART` (1-min); cohort ≈ 1,866 (arterial ≥30 min + infusion), 827 with a
-pressor. Split is case-level (`PID`; SIS has no patient ID). To use the large NIBP cohort instead, set
-`mover.target_source: nMAP` in the config (3–5 min cadence). `mover_*` `trans_thr` values are first
-guesses (derived-rate units) — refine after the cache reveals the rate distributions.
 
-## Cross-dataset generalization (VitalDB ↔ MOVER)
-
-**Internal robustness — 5-fold subject CV** (out-of-fold predictions over all cases + fold variance):
+### 6a. Internal 5-fold subject CV (robust in-distribution eval — out-of-fold over ALL cases)
 ```bash
-MODEL=tft COV=mover_rate CONFIG=datasets/mover/configs/data.yaml FOLDS=5 \
-    MATCH=results/ablation_windows_mover_art.csv sbatch slurm/train_baseline.sbatch   # add FOLDS support if needed
-# or directly: python scripts/baselines/train.py --model tft --cov rate --all --folds 5 ...
+# VitalDB (all2873.csv is complete -> run anytime). Overwrites baseline-<model>_all2873 with OOF.
+MODEL=tft      FOLDS=5 sbatch slurm/train_baseline.sbatch
+MODEL=patchtst FOLDS=5 sbatch slurm/train_baseline.sbatch
+# MOVER (CHAIN behind M1):
+for M in tft patchtst; do
+  MODEL=$M COV=mover_rate CONFIG=datasets/mover/configs/data.yaml FOLDS=5 \
+    MATCH=results/ablation_windows_mover_art.csv \
+    sbatch --dependency=afterok:<M1_jobid> slurm/train_baseline.sbatch
+done
 ```
-`--folds K` writes `ablation_windows_<tag>.csv` covering ALL cases (each in its held-out fold);
-`--folds 1` (default) keeps the single 60/20/20 split.
+`FOLDS=K` writes `ablation_windows_<tag>.csv` covering ALL cases (each in its held-out fold) +
+per-fold curves in `baseline_history_<tag>.json`; `FOLDS=1` (default) = single 60/20/20 split.
 
-**External transfer — M0 covariate-free, both datasets harmonized to 60 s.** Train on the full
-source (`--all-train` saves a checkpoint), then `cross_eval.py` applies it to the target:
+### 6b. Cross-dataset transfer — M0 covariate-free, both datasets harmonized to 60 s
+`ALLTRAIN=1` trains on the full cohort (manifest; independent of `mover_art.csv`) and saves a
+checkpoint; `cross_eval` applies it to the other dataset. Aborts on any cadence/channel mismatch.
 ```bash
-# source models (train on ALL cases, save checkpoint):
-python scripts/baselines/train.py --config datasets/vitaldb/configs/data_h60.yaml --cov rate --all \
-    --model tft --all-train --save-ckpt results/baseline_ckpt_vitaldb60.pt --device cuda
-python scripts/baselines/train.py --config datasets/mover/configs/data.yaml --cov mover_rate --all \
-    --model tft --all-train --save-ckpt results/baseline_ckpt_mover_art.pt --device cuda
+# --- transfer-source checkpoints (run anytime; per model) ---
+MODEL=tft      COV=rate       CONFIG=datasets/vitaldb/configs/data_h60.yaml ALLTRAIN=1 CKPT=results/baseline_ckpt_vitaldb60_tft.pt      sbatch slurm/train_baseline.sbatch
+MODEL=patchtst COV=rate       CONFIG=datasets/vitaldb/configs/data_h60.yaml ALLTRAIN=1 CKPT=results/baseline_ckpt_vitaldb60_patchtst.pt sbatch slurm/train_baseline.sbatch
+MODEL=tft      COV=mover_rate CONFIG=datasets/mover/configs/data.yaml       ALLTRAIN=1 CKPT=results/baseline_ckpt_mover_tft.pt         sbatch slurm/train_baseline.sbatch
+MODEL=patchtst COV=mover_rate CONFIG=datasets/mover/configs/data.yaml       ALLTRAIN=1 CKPT=results/baseline_ckpt_mover_patchtst.pt    sbatch slurm/train_baseline.sbatch
 
-# transfer (M0): source A -> target B, writes xfer-<model>_<A>TO<B>
-python scripts/baselines/cross_eval.py --ckpt results/baseline_ckpt_vitaldb60.pt \
-    --config datasets/mover/configs/data.yaml --cov mover_rate --arm M0 --tag xfer-tft_vitaldb60TOmover_art
-python scripts/baselines/cross_eval.py --ckpt results/baseline_ckpt_mover_art.pt \
-    --config datasets/vitaldb/configs/data_h60.yaml --cov rate --arm M0 --tag xfer-tft_moverTOvitaldb60
+# --- transfer both directions (per model); writes xfer-<model>_<A>TO<B> ---
+CKPT=results/baseline_ckpt_vitaldb60_tft.pt CONFIG=datasets/mover/configs/data.yaml       COV=mover_rate TAG=xfer-tft_vitaldb60TOmover_art sbatch slurm/cross_eval.sbatch
+CKPT=results/baseline_ckpt_mover_tft.pt     CONFIG=datasets/vitaldb/configs/data_h60.yaml COV=rate       TAG=xfer-tft_moverTOvitaldb60   sbatch slurm/cross_eval.sbatch
+# (+ the two patchtst directions)
 ```
-Both datasets must be harmonized (60 s + RATE covariate, same channel count) or cross_eval aborts on
-a shape mismatch. Zero-shot models need no transfer machinery — running them on each dataset natively
-IS the transfer test.
+
+### 6c. Pull down + figures
+```bash
+scp -r <cluster>:~/tirex-2/tirex-vitaldb/results ./
+# MOVER external-validation figure set (Fig 3/4/5 re-run on the MOVER tag; VitalDB-only foils dropped):
+$PYP python scripts/paper_figures.py mover_art        # (once the figure scripts are MOVER-aware — see NOTE)
+```
+> **NOTE (figure integration — not automatic yet).** `paper_figures.py` is currently hardwired to
+> VitalDB (`TAG=all2873`, Kapral/Zhu foils, single-split `canonical_test_subjects`). To include MOVER
+> and use the 5-fold CV / transfer results we need: (i) switch the matched comparison to all-cases OOF
+> + report fold SD; (ii) drop VitalDB-only foils when `tag=mover_art`; (iii) a NEW cross-dataset figure
+> (train×test transfer matrix + zero-shot-on-both). Tracked as the next figure-build task.
 
 ## Adding another dataset
 Drop it in as `datasets/<name>/` (a loader exposing `load_config`/`_clinical_index`/`load_case` that
