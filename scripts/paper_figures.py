@@ -347,6 +347,8 @@ def figure3(tag):
         y, s = _scores_subj(rows, c2s, test_subj, h)
         fpr, tpr, _ = H.roc_points(y, s); au = H.auroc(y, s)
         ax_roc.plot(fpr, tpr, "-", color=col, lw=1.5, label=f"TiRex {h} min ({au:.3f})")
+        ax_roc.plot(0.10, float(np.interp(0.10, fpr, tpr)), "o", color=col, ms=5,
+                    mec="white", mew=0.6, zorder=6)                       # spec >= 0.90 operating point
         yb, sb = _scores_subj(base_rows, c2s, test_subj, h)
         fb, tb, _ = H.roc_points(yb, sb); aub = H.auroc(yb, sb)
         ax_roc.plot(fb, tb, "--", color=col, lw=1.0, label=f"TFT {h} min ({aub:.3f})")
@@ -693,11 +695,8 @@ def figure_s_training(tag):
         if not a:
             continue
         c = a["curve"]; ep = [r["epoch"] for r in c]
-        ax.plot(ep, [r["train_pinball"] for r in c], "-", color=S.C["persist"], label="train")
-        ax.plot(ep, [r["val_pinball"] for r in c], "-o", color=S.C["M1"], ms=3, label="validation")
-        ax.axvline(a["best_epoch"], color=S.C["event"], lw=0.8, ls="--")
-        ax.text(a["best_epoch"], ax.get_ylim()[1], f" best epoch {a['best_epoch']}",
-                fontsize=5.5, color=S.C["event"], va="top")
+        ax.plot(ep, [r["train_pinball"] for r in c], "-", color=S.C["M1"], lw=1.3, label="train")
+        ax.plot(ep, [r["val_pinball"] for r in c], "-", color=S.C["M0"], lw=1.3, label="validation")
         S.finish(ax, "epoch", "pinball loss (normalised)", f"TFT {arm} — {lab}")
         ax.legend(loc="upper right")
     S.panel_letter(axs["M1"], "a"); S.panel_letter(axs["M0"], "b")
