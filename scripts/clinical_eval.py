@@ -119,6 +119,11 @@ def analysis_A(table, c2s, dev_subjects, tag, n_boot=800):
            "origin_cadence_min": round(float(dt_min), 1) if np.isfinite(dt_min) else None,
            "false_alarms_per_hour": round(float(fp_rate * origins_per_hr), 2)
            if np.isfinite(fp_rate) and np.isfinite(origins_per_hr) else None}
+    # early-warning YIELD curve: of ALL impending events, the % flagged at least t min ahead
+    # (t=0 intercept == sensitivity; the decay is the lead-time distribution). One value per minute.
+    ev_total = int(ev_t.sum())
+    out["lead_curve"] = {str(t): (round(float(np.sum(leads >= t)) / ev_total * 100, 1) if ev_total else None)
+                         for t in range(0, ALARM_MIN + 1)}
 
     fig, ax = plt.subplots(1, 2, figsize=(12, 4.6))
     if len(leads):
