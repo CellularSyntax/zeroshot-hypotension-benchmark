@@ -466,11 +466,12 @@ def _forest(ax, sg):
             yticks.append(y); ylabels.append(f"{lab} (n={n})  {au:.3f}")
         y += 1
     ax.axvline(overall["auroc"], color=S.C["persist"], lw=0.9, ls="--")
-    ax.text(overall["auroc"], -1.15, f"overall {overall['auroc']:.3f}", fontsize=5.6,
-            color="#555", ha="center", va="top")
+    # 'overall' key inside the plot (top-left, empty region) — not on the x-axis
+    ax.text(0.03, 0.995, f"– –  overall {overall['auroc']:.3f}", transform=ax.transAxes,
+            fontsize=5.6, color="#555", ha="left", va="top")
     ax.set_yticks(yticks); ax.set_yticklabels(ylabels, fontsize=5.6)
     ax.yaxis.tick_right()                             # tick labels on the right
-    ax.set_ylim(-1.4, y-0.4); ax.set_xlim(0.88, 0.96); ax.set_xticks([0.88, 0.90, 0.92, 0.94, 0.96])
+    ax.set_ylim(-0.6, y-0.4); ax.set_xlim(0.88, 0.96); ax.set_xticks([0.88, 0.90, 0.92, 0.94, 0.96])
     ax.set_xlabel("hypotension AUROC @5 min"); ax.set_title("Subgroup robustness", loc="center")
     ax.spines["left"].set_visible(False); ax.spines["right"].set_visible(True)
     ax.tick_params(axis="y", length=0)
