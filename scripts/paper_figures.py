@@ -761,8 +761,6 @@ def figure4(tag):
     a1, a2 = fig.add_subplot(sub_a[0, 0]), fig.add_subplot(sub_a[0, 1])
     # a1 — YIELD curve: of all impending events, % flagged >= t min ahead (t=0 intercept == sensitivity)
     ts = list(range(0, 16))
-    for tt in (2, 5):                                    # faint guides at the clinically-cited lead times
-        a1.axvline(tt, color="#CCC", lw=0.7, ls=":", zorder=1)
     for disp, mt, col, tir, mk in MODELS:
         cv = (_load_json(f"results/clinical_eval_{mt}.json") or {}).get("A_early_warning", {}).get("lead_curve")
         if not cv:

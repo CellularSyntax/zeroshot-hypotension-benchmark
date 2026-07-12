@@ -50,7 +50,7 @@ FIGURES = [
      "best zero-shot foil Chronos-Bolt) share fixed colours and markers across panels. (a) Early warning, "
      "two views at a fixed operating point (spec.\\ $\\geq$0.90): (left) detection yield --- of all "
      "impending hypotension events, the fraction flagged at least $t$ min ahead (the $t{=}0$ intercept is "
-     "sensitivity, the decay is the lead-time distribution; dotted guides at 2 and 5 min); (right) the "
+     "sensitivity, the decay is the lead-time distribution); (right) the "
      "alarm-burden trade-off --- sensitivity vs false alarms per hour as the alarm threshold sweeps (the "
      "clinical alert operating characteristic). Trained baselines flag more events at every lead time and "
      "at every alarm budget; TiRex-2 is competitive and above the best zero-shot foil. (b) Operating "
