@@ -68,3 +68,15 @@ manuscript/*.blg
 # Zenodo bundle artifacts (uploaded to Zenodo, not tracked in git)
 *.tar.gz
 BUNDLE_SHA256SUMS.txt
+
+# Internal-only working docs (kept locally, not shared with reviewers)
+/RESULTS.md
+/results_bundle.tex
+/results_bundle.pdf
+/notes/RESUME_HERE.md
+/notes/PROJECT_PLAN.md
+/notes/PAPER_TARGET.md
+/notes/RELATED_WORK.md
+/notes/API_NOTES.md
+/notes/HPC_PORTING.md
+/results/comparison_foils*.md

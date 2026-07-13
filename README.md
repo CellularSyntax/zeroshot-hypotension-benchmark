@@ -1,50 +1,88 @@
-# tirex-vitaldb
+# Zero-shot time-series foundation models for intraoperative hypotension prediction
 
-Zero-shot forecasting of intraoperative mean arterial pressure (MAP) with **TiRex-2**, conditioned on
-the known future drug-infusion trajectory, on the **VitalDB** open dataset. Primary result is a paired
-covariate ablation (with vs without the drug covariate); secondary task is impending-hypotension
-(MAP < 65 mmHg) early warning. No training / fine-tuning of TiRex-2 anywhere — zero-shot throughout.
+Code and derived results for the manuscript:
 
-See `notes/` for the full plan (`PROJECT_PLAN.md`), paper framing (`PAPER_TARGET.md`), data facts
-(`DATA_NOTES.md`), the trained-model foils we compare against (`RELATED_WORK.md`: Kapral 2024, Zhu 2026),
-and the cluster runbook (`CLUSTER.md`).
+> **Can a zero-shot time-series foundation model rival task-trained models for intraoperative
+> hypotension prediction? A two-cohort benchmark and the role of covariate-awareness.**
+> Max Haberbusch, Medical University of Vienna.
 
-## Layout
-Dataset-specific code/data live under `datasets/<name>/`; the forecasting + analysis pipeline is shared,
-so a second dataset (e.g. MOVER) drops in as `datasets/mover/` reusing `scripts/`.
-```
-datasets/vitaldb/   loader, cohort builder, scan tools; configs/ (data.yaml, data_pressor.yaml);
-                    cohort_manifest.csv + pressor_cases_phen.txt; data/ (raw, gitignored) + cache/
-scripts/            shared pipeline: phase3 ablation (flagship) + post-hoc analyses
-                    (hypo_eval, clinical_eval, subgroup_forest, plot_kapral_mae, merge_dashboard)
-configs/eval.yaml   shared evaluation protocol
-slurm/              cluster deployment (Pyxis container build, cache build, GPU ablation, submit_all)
-notes/              plan, related work, HPC porting, cluster runbook, resume/handoff
-results/            run outputs + curated (kapral digitized curves, foil comparison tables)
-```
-Run scripts with `PYTHONPATH=scripts:datasets/vitaldb` so the shared pipeline finds the dataset loader.
+We benchmark four **zero-shot** time-series foundation models (TiRex-2, Chronos-Bolt, TimesFM-2.5,
+Moirai-1.1-R) against two **task-trained** baselines (Temporal Fusion Transformer, PatchTST) for
+forecasting mean arterial pressure (MAP) and predicting impending hypotension (MAP < 65 mmHg) over
+1–15 min. The foundation models are applied with **no task-specific training and no labels**.
+Development is on **VitalDB** (2,708 cases); external validation is on the independent **MOVER**
+cohort (1,827 cases). The two cohorts are always reported stratified, never pooled.
 
-## Data (not included — fetch it)
-The **VitalDB raw `.vital` files, `clinical_data.csv`, `lab_data.csv`, and the papers are not committed**
-(see `.gitignore`). Only the small case manifest + pressor case list are included. VitalDB is an open
-dataset (https://vitaldb.net); please cite it and follow its terms. On a cluster, re-fetch the raw data
-(`.vital` + `clinical_data.csv`) with `slurm/download_vitalfiles.sh` into `datasets/vitaldb/data/`.
+---
 
-## Run locally (macOS, CPU)
+## Reproduce every figure and table — one notebook
+
+Everything a reviewer needs to verify the paper is in **[`reproduce_paper.ipynb`](reproduce_paper.ipynb)**.
+It regenerates **every main and supplementary figure** and prints **every table's numbers** from the
+released result files. **No model is retrained and no foundation-model inference is run** — the notebook
+reads the per-window forecasts and aggregate metrics we provide and rebuilds the figures/tables from them.
+
 ```bash
-PY=/path/to/venv/bin/python
-PYTHONPATH=scripts:datasets/vitaldb $PY scripts/phase3_ablation.py --n-cases 300 --seed 1     # anesthetic (remi+propofol CE)
-PYTHONPATH=scripts:datasets/vitaldb $PY scripts/hypo_eval.py n300_s1                          # hypotension ROC/PR/calibration
-PYTHONPATH=scripts:datasets/vitaldb $PY scripts/clinical_eval.py n300_s1                      # lead time / severity / decision curve
+# 1. create an environment (Python 3.11+)
+pip install -r requirements.txt
+
+# 2. get the released result files (see "Where the data lives" below), then:
+jupyter notebook reproduce_paper.ipynb        # Kernel -> Restart & Run All
 ```
 
-## Run the full cohort on the cluster (SLURM + GPU)
-See `notes/CLUSTER.md`. In short:
-```bash
-export HF_TOKEN=hf_xxx                 # gated NX-AI/TiRex-2 weights
-bash slurm/download_vitalfiles.sh      # re-fetch .vital
-bash slurm/build_container.sh          # one-time Pyxis image (deps + weights + kernels baked)
-bash slurm/submit_all.sh               # cache (CPU) -> ce + rate + pressor (GPU), auto-dependency
+The notebook's final cell prints a figure/table → result-file provenance map for auditability.
+
+## Where the data (result files) lives
+
+The `results/` directory required by the notebook (~1.4 GB: per-window forecasts, aggregate metrics,
+embeddings, precomputed tables) is archived on **Zenodo** and released with the paper (DOI added on
+acceptance). Download it and unpack into the repository root so `results/` sits next to
+`reproduce_paper.ipynb`. This GitHub repository is the **living codebase**; the Zenodo record is the
+**citable, frozen snapshot** of code + results at publication.
+
+The raw source datasets are **not** redistributed here (data-use terms):
+
+- **VitalDB** — openly available at <https://vitaldb.net> and via PhysioNet.
+- **MOVER** — public-access, from the UCI Machine Learning Repository.
+
+Reproducing the figures/tables does **not** require the raw datasets — only the released `results/`.
+Re-running the models from raw data (optional) is documented in [`notes/REPRODUCE.md`](notes/REPRODUCE.md).
+
+## Repository layout
+
+```
+reproduce_paper.ipynb     one-shot figure/table regeneration (start here)
+requirements.txt          runtime dependencies for the notebook
+scripts/                  figure/table generators + shared forecasting-pipeline code
+  paper_figures.py          Fig 1–5, several tables
+  transfer_figure.py        Fig 6 + transfer table
+  decision_curves_figure.py FigS decision curves
+  external_table.py         external-validation table
+  stats_tests.py            paired significance tests table
+  compute_footprint.py      per-model compute footprint (GPU; measurement only)
+  compute_footprint_table.py aggregates footprint JSON -> table (stdlib, no GPU)
+  explainability/           representation-analysis figures (UMAP, RSA/CKA)
+  baselines/                TFT/PatchTST models, training, zero-shot adapters
+datasets/vitaldb/         VitalDB loader, cohort builder, configs, DATA_NOTES.md
+datasets/mover/           MOVER loader + configs
+configs/eval.yaml         shared evaluation protocol (horizons, threshold, bootstrap)
+slurm/                    cluster job scripts for the heavy runs (training, inference, embeddings)
+manuscript/               LaTeX source, figures, compiled PDF
+notes/REPRODUCE.md        end-to-end recipe to regenerate results from raw data
+notes/CLUSTER.md          how the heavy runs execute on the SLURM/A100 cluster
+MOVER_SCHEMA_REPORT.md    MOVER schema and how it maps onto the VitalDB pipeline
 ```
 
-Zero-shot foundation model; not a medical device; research use only.
+Run pipeline scripts with `PYTHONPATH=scripts:datasets/vitaldb:datasets/mover` so the shared pipeline
+finds the dataset loaders.
+
+## Cluster (optional — re-running the heavy steps)
+
+Model training, zero-shot inference, embedding extraction and the compute-footprint measurement run on
+an A100 GPU via SLURM + a Pyxis/enroot container. See [`notes/CLUSTER.md`](notes/CLUSTER.md) and the
+scripts in `slurm/`.
+
+## License
+
+Code is released under the license in [`LICENSE.txt`](LICENSE.txt). Released result files are
+distributed under CC BY 4.0. The raw VitalDB and MOVER datasets remain under their respective terms.
