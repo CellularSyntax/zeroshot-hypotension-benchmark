@@ -7,14 +7,14 @@ predictions (risk_M1) already live in results/ablation_windows_mover_art.csv on 
 subgroup AUROC + case-clustered bootstrap + forest plot are computed locally after joining on
 caseid -- this script only exposes the covariates that are not available off-cluster.
 
-Run on the CLUSTER (which holds datasets/mover/clinical_data.csv), from the project root:
+STDLIB ONLY (csv + math) -- no numpy -- so it runs with the cluster LOGIN-node python3
+directly, no container / compute node required. From the project root:
     PYTHONPATH=scripts:datasets/mover python3 scripts/mover_subgroup_covariates.py
 
 Writes results/mover_subgroup_covariates.csv  (pull to the Mac).
 """
 from __future__ import annotations
-import csv, os, sys
-import numpy as np
+import csv, math, os, sys
 
 WINDOWS = "results/ablation_windows_mover_art.csv"
 CLINICAL = "datasets/mover/clinical_data.csv"
@@ -25,7 +25,7 @@ def fnum(r, k):
     try:
         return float(r[k])
     except (ValueError, TypeError, KeyError):
-        return np.nan
+        return float("nan")
 
 
 def norm_caseid(c):
@@ -64,19 +64,19 @@ def main():
                 continue
             age = fnum(r, "age")
             ht, wt = fnum(r, "height"), fnum(r, "weight")
-            with np.errstate(divide="ignore", invalid="ignore"):
-                bmi = wt / (ht / 100.0) ** 2
-            if not (np.isfinite(bmi) and 5 < bmi < 100):
-                bmi = np.nan
+            bmi = wt / (ht / 100.0) ** 2 if (ht and math.isfinite(ht) and ht > 0
+                                             and math.isfinite(wt)) else float("nan")
+            if not (math.isfinite(bmi) and 5 < bmi < 100):
+                bmi = float("nan")
             dur = (fnum(r, "aneend") - fnum(r, "anestart")) / 60.0
-            if not (np.isfinite(dur) and dur > 0):
-                dur = np.nan
+            if not (math.isfinite(dur) and dur > 0):
+                dur = float("nan")
             sex = str(r.get("sex", "")).strip().upper()
             sex = "M" if sex.startswith("M") else ("F" if sex.startswith("F") else "")
             w.writerow([c, sex,
-                        "" if np.isnan(age) else round(age, 1),
-                        "" if np.isnan(bmi) else round(bmi, 2),
-                        "" if np.isnan(dur) else round(dur, 1)])
+                        "" if math.isnan(age) else round(age, 1),
+                        "" if math.isnan(bmi) else round(bmi, 2),
+                        "" if math.isnan(dur) else round(dur, 1)])
             n += 1
     print(f"wrote {OUT}  ({n} cases with covariates, of {len(keep)} in windows)")
 
