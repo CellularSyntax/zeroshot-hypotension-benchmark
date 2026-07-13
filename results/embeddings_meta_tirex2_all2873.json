@@ -1,0 +1,12 @@
+{
+ "tag": "tirex2_all2873",
+ "model": "tirex2",
+ "hook_path": "stack_out_norm[D=512,k=1]",
+ "n_windows": 4000,
+ "emb_dim": 512,
+ "context_min": 30,
+ "cov": "ce",
+ "max_windows": 4000,
+ "seed": 0,
+ "match_tirex": "ablation_windows_all2873.csv"
+}

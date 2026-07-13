@@ -1,0 +1,202 @@
+{
+  "tag": "mover_art",
+  "dt_s": 60.0,
+  "n_origins": 34583,
+  "cache_miss": 0,
+  "horizons_min": [
+    1,
+    3,
+    5,
+    7,
+    10,
+    15
+  ],
+  "per_horizon": {
+    "1min": {
+      "n_test": 27740,
+      "prevalence": 0.1671,
+      "persistence": {
+        "auroc": 0.9974,
+        "auroc_CI95": [
+          0.9967,
+          0.9981
+        ],
+        "auprc": 0.9567,
+        "auprc_CI95": [
+          0.9452,
+          0.9675
+        ],
+        "auroc_fullset": 0.9973
+      },
+      "map_trend_logit": {
+        "auroc": 0.9974,
+        "auroc_CI95": [
+          0.9967,
+          0.998
+        ],
+        "auprc": 0.9564,
+        "auprc_CI95": [
+          0.9452,
+          0.9676
+        ],
+        "coef_lastMAP": -0.7234,
+        "coef_slope": 0.0638
+      }
+    },
+    "3min": {
+      "n_test": 27740,
+      "prevalence": 0.2327,
+      "persistence": {
+        "auroc": 0.9523,
+        "auroc_CI95": [
+          0.9482,
+          0.9565
+        ],
+        "auprc": 0.9025,
+        "auprc_CI95": [
+          0.8922,
+          0.9127
+        ],
+        "auroc_fullset": 0.9517
+      },
+      "map_trend_logit": {
+        "auroc": 0.9524,
+        "auroc_CI95": [
+          0.9482,
+          0.9565
+        ],
+        "auprc": 0.9022,
+        "auprc_CI95": [
+          0.8919,
+          0.9124
+        ],
+        "coef_lastMAP": -0.2517,
+        "coef_slope": 0.0563
+      }
+    },
+    "5min": {
+      "n_test": 27740,
+      "prevalence": 0.2808,
+      "persistence": {
+        "auroc": 0.9184,
+        "auroc_CI95": [
+          0.9133,
+          0.9238
+        ],
+        "auprc": 0.8715,
+        "auprc_CI95": [
+          0.8607,
+          0.8823
+        ],
+        "auroc_fullset": 0.917
+      },
+      "map_trend_logit": {
+        "auroc": 0.9184,
+        "auroc_CI95": [
+          0.9133,
+          0.9236
+        ],
+        "auprc": 0.8707,
+        "auprc_CI95": [
+          0.8598,
+          0.8814
+        ],
+        "coef_lastMAP": -0.1856,
+        "coef_slope": 0.0618
+      }
+    },
+    "7min": {
+      "n_test": 27740,
+      "prevalence": 0.3175,
+      "persistence": {
+        "auroc": 0.8918,
+        "auroc_CI95": [
+          0.886,
+          0.8979
+        ],
+        "auprc": 0.8543,
+        "auprc_CI95": [
+          0.8435,
+          0.865
+        ],
+        "auroc_fullset": 0.8909
+      },
+      "map_trend_logit": {
+        "auroc": 0.892,
+        "auroc_CI95": [
+          0.886,
+          0.8978
+        ],
+        "auprc": 0.8532,
+        "auprc_CI95": [
+          0.842,
+          0.864
+        ],
+        "coef_lastMAP": -0.1583,
+        "coef_slope": 0.0692
+      }
+    },
+    "10min": {
+      "n_test": 27740,
+      "prevalence": 0.3612,
+      "persistence": {
+        "auroc": 0.866,
+        "auroc_CI95": [
+          0.8597,
+          0.8727
+        ],
+        "auprc": 0.8435,
+        "auprc_CI95": [
+          0.8333,
+          0.8543
+        ],
+        "auroc_fullset": 0.8655
+      },
+      "map_trend_logit": {
+        "auroc": 0.8659,
+        "auroc_CI95": [
+          0.8594,
+          0.8725
+        ],
+        "auprc": 0.8408,
+        "auprc_CI95": [
+          0.8298,
+          0.8515
+        ],
+        "coef_lastMAP": -0.1344,
+        "coef_slope": 0.0927
+      }
+    },
+    "15min": {
+      "n_test": 27740,
+      "prevalence": 0.4141,
+      "persistence": {
+        "auroc": 0.8406,
+        "auroc_CI95": [
+          0.8337,
+          0.8478
+        ],
+        "auprc": 0.8389,
+        "auprc_CI95": [
+          0.8281,
+          0.8492
+        ],
+        "auroc_fullset": 0.8401
+      },
+      "map_trend_logit": {
+        "auroc": 0.8408,
+        "auroc_CI95": [
+          0.8339,
+          0.8478
+        ],
+        "auprc": 0.8361,
+        "auprc_CI95": [
+          0.8248,
+          0.8469
+        ],
+        "coef_lastMAP": -0.109,
+        "coef_slope": 0.0984
+      }
+    }
+  }
+}

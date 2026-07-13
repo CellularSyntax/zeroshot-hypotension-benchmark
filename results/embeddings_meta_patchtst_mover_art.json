@@ -1,0 +1,12 @@
+{
+ "tag": "patchtst_mover_art",
+ "model": "patchtst",
+ "hook_path": "PatchTST.norm::mean_over_chan_patch <- baseline_ckpt_mover_patchtst.pt",
+ "n_windows": 3999,
+ "emb_dim": 64,
+ "context_min": 30,
+ "cov": "mover_rate",
+ "max_windows": 4000,
+ "seed": 0,
+ "match_tirex": "ablation_windows_mover_art.csv"
+}

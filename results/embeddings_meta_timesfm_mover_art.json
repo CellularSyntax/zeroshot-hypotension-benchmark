@@ -1,0 +1,12 @@
+{
+ "tag": "timesfm_mover_art",
+ "model": "timesfm",
+ "hook_path": "stacked_xf.19[D=1280,k=384,first]",
+ "n_windows": 3999,
+ "emb_dim": 1280,
+ "context_min": 30,
+ "cov": "mover_rate",
+ "max_windows": 4000,
+ "seed": 0,
+ "match_tirex": "ablation_windows_mover_art.csv"
+}

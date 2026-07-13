@@ -1,0 +1,12 @@
+{
+ "tag": "chronos_mover_art",
+ "model": "chronos",
+ "hook_path": "pipeline.embed()::mean_over_seq",
+ "n_windows": 3999,
+ "emb_dim": 768,
+ "context_min": 30,
+ "cov": "mover_rate",
+ "max_windows": 4000,
+ "seed": 0,
+ "match_tirex": "ablation_windows_mover_art.csv"
+}

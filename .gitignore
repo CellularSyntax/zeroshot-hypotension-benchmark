@@ -80,3 +80,8 @@ BUNDLE_SHA256SUMS.txt
 /notes/API_NOTES.md
 /notes/HPC_PORTING.md
 /results/comparison_foils*.md
+
+# Intermediate analysis dumps (superseded by curated suppl_*.csv / tables, delivered via Zenodo)
+results/_expl_*
+results/_rev_*
+manuscript/tables.tex

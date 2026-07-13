@@ -1,0 +1,12 @@
+{
+ "tag": "moirai_all2873",
+ "model": "moirai",
+ "hook_path": "encoder.norm[D=1024,k=1,mean]",
+ "n_windows": 4000,
+ "emb_dim": 1024,
+ "context_min": 30,
+ "cov": "ce",
+ "max_windows": 4000,
+ "seed": 0,
+ "match_tirex": "ablation_windows_all2873.csv"
+}

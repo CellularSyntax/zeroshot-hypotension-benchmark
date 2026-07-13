@@ -1,0 +1,33 @@
+{
+  "cohort": "MOVER",
+  "denominator": "cases contributing >=1 forecast window",
+  "n_cases": 1827,
+  "age_median_iqr": [
+    57.0,
+    45.0,
+    68.0
+  ],
+  "male_n": 996,
+  "male_pct": 54.5,
+  "n_sex_known": 1827,
+  "bmi_median_iqr": [
+    26.6,
+    23.1,
+    31.2
+  ],
+  "n_bmi_known": 1795,
+  "anesthesia_min_median_iqr": [
+    307.0,
+    212.0,
+    418.0
+  ],
+  "asa": null,
+  "department": null,
+  "n_windows": 34583,
+  "hypo_prevalence_pct": {
+    "1min": 16.7,
+    "5min": 28.1,
+    "10min": 36.1,
+    "15min": 41.4
+  }
+}

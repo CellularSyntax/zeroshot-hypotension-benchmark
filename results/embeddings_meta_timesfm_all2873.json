@@ -1,0 +1,12 @@
+{
+ "tag": "timesfm_all2873",
+ "model": "timesfm",
+ "hook_path": "stacked_xf.19[D=1280,k=384,first]",
+ "n_windows": 4000,
+ "emb_dim": 1280,
+ "context_min": 30,
+ "cov": "ce",
+ "max_windows": 4000,
+ "seed": 0,
+ "match_tirex": "ablation_windows_all2873.csv"
+}
