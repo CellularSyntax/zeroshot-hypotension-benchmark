@@ -1,5 +1,5 @@
 """Supplementary decision-curve analysis figure (FigS_decision_curves).
-
+import os
 Net benefit of the isotonic-recalibrated zero-shot TiRex-2 hypotension risk versus the two
 default strategies (treat-all, treat-none) at 1/5/15 min, for VitalDB (development, top row)
 and MOVER (external, bottom row). The isotonic recalibration map is fit on each cohort's own
@@ -25,7 +25,10 @@ from sklearn.isotonic import IsotonicRegression
 import paper_style as S
 
 RES = "results"
-CL_V = "datasets/vitaldb/data/clinical_data.csv"
+# subject-level split source: prefer the shipped 2-column crosswalk, then the full VitalDB
+# clinical table; None -> cohort_split_col falls back to case-level (documented in the bundle README)
+CL_V = next((p for p in ("results/vitaldb_case_subject_map.csv",
+                         "datasets/vitaldb/data/clinical_data.csv") if os.path.exists(p)), None)
 HORIZONS = [1, 5, 15]
 PTS = np.linspace(0.02, 0.35, 34)          # clinically plausible alarm-threshold range
 COLORS = {"model": "#1b7837", "all": "#999999"}

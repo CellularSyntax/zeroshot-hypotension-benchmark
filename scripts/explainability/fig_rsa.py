@@ -1,7 +1,7 @@
 import numpy as np, json
 import matplotlib; matplotlib.use("Agg")
 import matplotlib.pyplot as plt
-root="/Users/admin/Desktop/DATA/Uni/2026/Projects/tirex-2/results"
+root="results"
 RSA=json.load(open(f"{root}/_expl_rsa_both.json"))
 LAB={"tirex2":"TiRex-2","chronos":"Chronos","timesfm":"TimesFM","moirai":"Moirai","tft":"TFT","patchtst":"PatchTST"}
 fig,axes=plt.subplots(1,2,figsize=(12,5.2))
@@ -20,5 +20,5 @@ for ax,(tag,cohort) in zip(axes,[("all2873","VitalDB"),("mover_art","MOVER (exte
 cbar=fig.colorbar(im,ax=axes,fraction=0.025,pad=0.02)
 cbar.set_label("linear CKA (representational similarity)",fontsize=9)
 fig.suptitle("Cross-model representational similarity (linear CKA) on identical windows",fontsize=12.5,y=1.0)
-fig.savefig("/Users/admin/Desktop/DATA/Uni/2026/Projects/tirex-2/FigS_rsa_cka.png",dpi=150,bbox_inches="tight")
+fig.savefig("FigS_rsa_cka.png",dpi=150,bbox_inches="tight")
 print("saved")

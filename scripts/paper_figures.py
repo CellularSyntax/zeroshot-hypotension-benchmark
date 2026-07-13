@@ -992,8 +992,15 @@ def windows_caseids(tag):
 def table1_cohort(tag):
     # Denominator = cases contributing >=1 window; demographics from authoritative clinical_data.csv
     # (the manifest is incomplete). Normalise caseids to strip zero-padding across sources.
+    # Table 1 needs patient DEMOGRAPHICS (not just the id map), which live only in the raw VitalDB
+    # clinical table. When that raw file is absent (e.g. the Zenodo bundle, which does not
+    # redistribute it), keep the precomputed results/tables/Table1_cohort.csv and skip recompute.
+    CLIN = "datasets/vitaldb/data/clinical_data.csv"
+    if not os.path.exists(CLIN):
+        print("  [table1] raw clinical_data.csv absent -> keeping precomputed results/tables/Table1_cohort.csv")
+        return
     keep = {str(int(c)) for c in windows_caseids(tag)}
-    cd = {str(int(r["caseid"])): r for r in csv.DictReader(open("datasets/vitaldb/data/clinical_data.csv", encoding="utf-8-sig"))}
+    cd = {str(int(r["caseid"])): r for r in csv.DictReader(open(CLIN, encoding="utf-8-sig"))}
     rows = [cd[c] for c in keep if c in cd]
     hyp = load_hypo(tag); n = len(rows)
     def fnum(r, k):

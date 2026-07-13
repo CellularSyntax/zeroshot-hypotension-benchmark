@@ -159,10 +159,18 @@ def load_rows(tag):
 
 
 def caseid_to_subject():
-    m = {}
-    for r in csv.DictReader(open(os.environ.get("HE_CLINICAL", "datasets/vitaldb/data/clinical_data.csv"), encoding="utf-8-sig")):
-        m[str(int(r["caseid"]))] = str(r["subjectid"])
-    return m
+    """Map caseid->subjectid for subject-level splitting. Prefers HE_CLINICAL, then the
+    shipped two-column crosswalk (results/vitaldb_case_subject_map.csv), then the full
+    VitalDB clinical table. Returns {} if none is present (caller falls back to case-level)."""
+    for path in [os.environ.get("HE_CLINICAL"),
+                 "results/vitaldb_case_subject_map.csv",
+                 "datasets/vitaldb/data/clinical_data.csv"]:
+        if path and os.path.exists(path):
+            m = {}
+            for r in csv.DictReader(open(path, encoding="utf-8-sig")):
+                m[str(int(r["caseid"]))] = str(r["subjectid"])
+            return m
+    return {}   # no mapping available -> split_subjects treats each caseid as its own subject
 
 
 def split_subjects(caseids, c2s, dev_frac=0.2, seed=0):

@@ -2,7 +2,7 @@ import numpy as np, csv
 import matplotlib; matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 from matplotlib.lines import Line2D
-root="/Users/admin/Desktop/DATA/Uni/2026/Projects/tirex-2/results"
+root="results"
 # canonical AUROC from the supplementary CSV (single source of truth, figure-style 1.7)
 LABn={"TiRex-2":"tirex2","Chronos-Bolt":"chronos","TimesFM-2.5":"timesfm","Moirai-1.1-R":"moirai","TFT":"tft","PatchTST":"patchtst"}
 AU={}  # AU[(cohort,model_key,horizon)] = auroc
@@ -43,7 +43,7 @@ def render(tag, cohort_csv, cohort_title, outfile):
     fig.tight_layout(rect=[0,0.035,1,0.97])
     fig.savefig(outfile,dpi=150,bbox_inches="tight"); plt.close(fig)
     print("saved",outfile)
-base="/Users/admin/Desktop/DATA/Uni/2026/Projects/tirex-2"
+base="."
 render("all2873","VitalDB","VitalDB",f"{base}/FigS_umap_vitaldb.png")
 render("mover_art","MOVER","MOVER (external)",f"{base}/FigS_umap_mover.png")
 # verify a few against CSV
