@@ -199,9 +199,14 @@ def _dump_structure(model_name, root):
 
 # ---- per-model runners: build (root, run_batch) and delegate to run_capture ----
 
-# Exact module names to pin for the two models StarEmbed does not cover. Fill from a
-# print(model) structure dump (run with --dump-structure). None -> autodiscover.
-PINNED_LAYER = {"tirex2": None, "timesfm": None}
+# Exact module names to pin for the two models StarEmbed does not cover, chosen from their
+# print(model) structure dumps (run with --dump-structure). None -> autodiscover.
+#   tirex2   : 'stack_out_norm' = LayerNorm on the 12-block encoder-stack output (D=512), the
+#              final hidden state before the quantile head (output_patch_embedding). Patched input
+#              means it fires once per patch-step -> run_capture averages the k fires per window.
+#   timesfm  : 'stacked_xf.19' = output of the LAST (20th) transformer block (D=1280), the final
+#              encoder representation before the point/quantile heads.
+PINNED_LAYER = {"tirex2": "stack_out_norm", "timesfm": "stacked_xf.19"}
 
 
 def embed_tirex2(win, Lc, H, bs, device):
