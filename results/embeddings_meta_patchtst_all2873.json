@@ -1,0 +1,12 @@
+{
+ "tag": "patchtst_all2873",
+ "model": "patchtst",
+ "hook_path": "PatchTST.norm::mean_over_chan_patch <- baseline_ckpt_vitaldb15_patchtst.pt",
+ "n_windows": 4000,
+ "emb_dim": 64,
+ "context_min": 30,
+ "cov": "ce",
+ "max_windows": 4000,
+ "seed": 0,
+ "match_tirex": "ablation_windows_all2873.csv"
+}
