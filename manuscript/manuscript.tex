@@ -42,56 +42,21 @@ benchmark and the role of covariate-awareness}}
 % ---------------- abstract ----------------
 \begin{abstract}
 \noindent
-Intraoperative hypotension is common and linked to postoperative organ
-injury, motivating models that forecast mean arterial pressure (MAP) and
-warn of impending hypotension. State-of-the-art models are trained on
-large, site-specific labelled cohorts, which constrains portability. We
-asked whether general-purpose time-series foundation models, applied
-zero-shot---with no task-specific training and no labels---can rival
-task-trained models, and what makes such a model clinically useful. On a
-development cohort of 2{,}708 VitalDB cases we benchmarked four zero-shot
-foundation models (TiRex-2, Chronos-Bolt, TimesFM-2.5, Moirai-1.1-R)
-against task-trained Temporal Fusion Transformer (TFT) and PatchTST
-baselines. The task was to forecast MAP and predict hypotension
-(MAP\,$<$\,65~mmHg) over 1--15~min, with the trained baselines evaluated by
-subject-level 5-fold out-of-fold cross-validation. TiRex-2 was the strongest zero-shot forecaster, leading every
-other foundation model on hypotension discrimination from 3~min onward
-(e.g.\ area under the receiver operating characteristic curve, AUROC,
-$+0.007$ to $+0.008$ at 5~min; all $p<0.001$; a tie with TimesFM-2.5 at
-1~min); its lead held
-even without the drug covariate, indicating it reflects base forecast
-quality rather than covariate access. Against the task-trained baselines,
-zero-shot TiRex-2 slightly but significantly exceeded TFT at 5~min (0.929 vs
-0.923, $p=0.002$) and was statistically indistinguishable from it at 7~min
-(0.905 vs 0.903, $p=0.337$)---on par with TFT across the short-to-mid
-horizons. Its horizon-matched forecast mean absolute error (MAE) was 6.20~mmHg
-at 7~min, comparable to the 7~mmHg external 7-min MAE reported for a
-task-trained comparator. The in-house trained baselines had lower MAE
-beyond 1~min, and the stronger PatchTST baseline led on discrimination from
-5~min onward. Among the
-four foundation models, TiRex-2 alone can condition on the known future
-drug-infusion plan; this gave a small but significant accuracy gain
-concentrated where the infusion changes ($+1.15\%$ CRPS reduction, 95\% CI
-$+0.84$ to $+1.47$, at 7~min in transition windows), far smaller than the
-covariate dependence of the trained models. Because TiRex-2 already led the
-other foundation models \emph{without} the covariate, its overall advantage
-reflects base forecast quality more than covariate access. On an independent external cohort (MOVER, 1{,}827 cases;
-invasive arterial MAP; 2--3$\times$ higher hypotension prevalence), the
-identical zero-shot model held AUROC\,$\geq$\,0.85 across horizons, its lead
-among foundation models reproduced, and it matched models trained on MOVER
-while outperforming models transferred from VitalDB. Discrimination was
-label-free; well-calibrated risk additionally required a small labelled
-sample from the target site to fit a post-hoc recalibration map. A naive persistence
-baseline, however, was highly competitive at short horizons: at MOVER's 60~s
-cadence it exceeded every learned model, foundation and task-trained, through
-5~min. On the external cohort, then, the distinctive value of a forecaster
-emerges only at the longer horizons ($\geq$10~min), where persistence
-degrades. Read against this floor, a single training-free foundation model is
-competitive with task-trained models for intraoperative haemodynamic
-prediction---on par with TFT but behind the stronger PatchTST baseline at the
-longer horizons---with an advantage over a trivial alarm that is
-horizon-dependent. Conditioning on the planned intervention is associated with
-the leading model's edge, though the effect is small.
+Intraoperative hypotension is common and linked to organ injury. Models that
+forecast mean arterial pressure (MAP) are trained on large, site-specific
+labelled cohorts, which limits portability. We asked whether general-purpose
+time-series foundation models, applied zero-shot---no task-specific training,
+no labels---can rival task-trained models. On 2{,}708 VitalDB cases we
+benchmarked four zero-shot foundation models against task-trained Temporal
+Fusion Transformer (TFT) and PatchTST baselines, predicting hypotension
+(MAP\,$<$\,65~mmHg) over 1--15~min. TiRex-2 led all foundation models and
+matched TFT at short-to-mid horizons (AUROC 0.929 vs 0.923 at 5~min) but
+trailed the stronger PatchTST at longer horizons. Its lead held even without
+the drug-infusion covariate, indicating base forecast quality. On an external
+cohort (MOVER; 2--3$\times$ higher prevalence) the identical model held
+AUROC\,$\geq$\,0.85 and matched MOVER-trained models. Zero-shot foundation
+models are thus a portable alternative for intraoperative hypotension
+prediction---matching TFT, though not the strongest supervised baseline.
 \end{abstract}
 
 \section{Introduction}
