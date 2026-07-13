@@ -508,7 +508,13 @@ because MOVER's 2--3$\times$ higher prevalence shifts the calibration
 intercept. Discrimination
 (AUROC) is therefore label-free and portable, but \emph{calibration} correction
 requires a one-off labelled subset from the target cohort---a modest
-requirement, but not a zero-label one. After recalibration, decision-curve analysis
+requirement, but not a zero-label one. This is, in effect, a favourable
+division of labour along the label axis: discrimination is obtained zero-shot,
+while a light \emph{few-shot} step---a small labelled sample from the deployment
+site, used only to fit a monotone recalibration map and leaving the model
+weights untouched---suffices to make the risk scores locally reliable. Site
+adaptation here is a calibration exercise on tens of labelled cases, not a
+retraining exercise on a large site-specific cohort. After recalibration, decision-curve analysis
 showed net benefit exceeding both default strategies---treat-all and
 treat-none---across essentially the whole range of clinically plausible alarm
 thresholds (2--35\% risk) on both cohorts (Supplementary Fig.~\ref{fig:dca}):
