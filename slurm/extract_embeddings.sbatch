@@ -65,11 +65,12 @@ set -euo pipefail
 export PROJECT_ROOT='${PROJECT_ROOT}'
 source '${PROJECT_ROOT}/slurm/setup_env.sh'
 cd '${PROJECT_ROOT}'
-if [ '${MODEL}' = 'tirex2' ]; then
-  # gated TiRex-2 repo: stay in the container env, keep HF_HUB_OFFLINE=1 (weights cached).
-  echo '[emb] tirex2 in container env'
+if [ '${MODEL}' = 'tirex2' ] || [ '${MODEL}' = 'tft' ] || [ '${MODEL}' = 'patchtst' ]; then
+  # Container-env models: gated TiRex-2 (HF_HUB_OFFLINE=1, weights cached) AND our own trained
+  # baselines tft/patchtst (pure-torch, load a local results/baseline_ckpt_*.pt -> no HF download).
+  echo \"[emb] ${MODEL} in container env\"
   PYTHONPATH=scripts:datasets/vitaldb:datasets/mover python scripts/baselines/extract_embeddings.py \
-      --config ${CONFIG} --model tirex2 --cov ${COV} \
+      --config ${CONFIG} --model ${MODEL} --cov ${COV} \
       --match-tirex ${MATCH} --max-windows ${MAXWIN} --device cuda --batch-size 64 ${EXTRA}
 else
   # ungated foundation weights -> per-model isolated venv + allow downloads

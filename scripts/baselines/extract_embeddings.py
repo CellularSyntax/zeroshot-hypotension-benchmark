@@ -302,8 +302,79 @@ def embed_moirai(win, Lc, H, bs, device):
     return run_capture(module, run_batch, len(win), bs, pin=PINNED_LAYER.get("moirai"))
 
 
+def _load_baseline_ckpt(model_name, match_tirex):
+    """Locate + load the trained checkpoint for tft/patchtst matching the current cohort.
+    VitalDB windows -> baseline_ckpt_vitaldb60_<m>.pt ; MOVER -> baseline_ckpt_mover_<m>.pt."""
+    import torch
+    from baselines.models import build_model
+    stem = os.path.basename(match_tirex)
+    cohort = "mover" if "mover" in stem else "vitaldb60"
+    ck_path = f"results/baseline_ckpt_{cohort}_{model_name}.pt"
+    if not os.path.exists(ck_path):
+        raise FileNotFoundError(f"missing trained checkpoint {ck_path} (train.py --all-train first)")
+    ck = torch.load(ck_path, map_location="cpu", weights_only=False)
+    model = build_model(ck["model"], ck["n_past"], ck["n_fut"], ck["H"],
+                        context_len=ck["Lc"], d=ck["d_model"])
+    model.load_state_dict(ck["state"]["M1"])          # M1 = covariate-aware arm (analogue of TiRex-2)
+    model.eval()
+    return model, ck, ck_path
+
+
+def _run_baseline(model, ck, win, device, target_module, pool_fn, path_label):
+    """Shared driver for the task-trained baselines: normalise windows with the checkpoint's
+    train-time norm (M1 arm -> use_future=True), forward in batches with a forward-hook on the
+    penultimate module, and pool each batch's captured activation to one vector per window."""
+    import torch
+    from baselines import data as D
+    P_, F_, _, _, _ = D.to_tensors(win, ck["norm"], use_future=True)
+    n_past, n_fut = P_.shape[-1], F_.shape[-1]
+    if (n_past, n_fut) != (ck["n_past"], ck["n_fut"]):
+        raise RuntimeError(f"channel mismatch: windows ({n_past},{n_fut}) vs ckpt "
+                           f"({ck['n_past']},{ck['n_fut']}) -- covariate preset must match training")
+    model.to(device)
+    grabbed = {}
+    h = target_module.register_forward_hook(lambda _m, _i, out: grabbed.__setitem__("x", out))
+    embs = []
+    with torch.no_grad():
+        for lo in range(0, len(win), 64):
+            p = torch.tensor(P_[lo:lo + 64], device=device)
+            f = torch.tensor(F_[lo:lo + 64], device=device)
+            model(p, f)
+            embs.append(pool_fn(grabbed["x"], p.shape[0]).float().cpu().numpy())
+    h.remove()
+    return np.concatenate(embs, axis=0), path_label
+
+
+def embed_tft(win, Lc, H, bs, device, match_tirex):
+    """Trained TFT (task-trained reference). Penultimate = pos_grn output [B,H,d=64], mean over the
+    horizon positions -> one vector per window (analogous to the FM encoder pooling)."""
+    model, ck, _ = _load_baseline_ckpt("tft", match_tirex)
+    if _DUMP:
+        _dump_structure("tft", model); return np.empty((0, 0)), "dump"
+    return _run_baseline(model, ck, win, device, model.pos_grn,
+                         lambda x, b: x.mean(dim=1), "TFT.pos_grn::mean_over_horizon")
+
+
+def embed_patchtst(win, Lc, H, bs, device, match_tirex):
+    """Trained PatchTST (task-trained reference). Penultimate = norm output, shape [B*C, n_patch, d]
+    in b-major order; reshape to [B,C,n_patch,d] and mean over channels+patches -> [B,d=96]."""
+    model, ck, _ = _load_baseline_ckpt("patchtst", match_tirex)
+    if _DUMP:
+        _dump_structure("patchtst", model); return np.empty((0, 0)), "dump"
+    C = model.C
+
+    def pool(x, b):
+        d = x.shape[-1]
+        return x.reshape(b, C, -1, d).mean(dim=(1, 2))     # b-major [B,C,n_patch,d] -> [B,d]
+    return _run_baseline(model, ck, win, device, model.norm, pool, "PatchTST.norm::mean_over_chan_patch")
+
+
 RUNNERS = {"tirex2": embed_tirex2, "chronos": embed_chronos,
-           "timesfm": embed_timesfm, "moirai": embed_moirai}
+           "timesfm": embed_timesfm, "moirai": embed_moirai,
+           "tft": embed_tft, "patchtst": embed_patchtst}
+# Task-trained baselines need the --match-tirex path (to locate the cohort checkpoint); the CPU-only
+# trained models don't need a GPU.
+_NEEDS_MATCH = {"tft", "patchtst"}
 
 
 def stratified_subsample(win, max_windows, seed):
@@ -371,8 +442,9 @@ def main():
     min_run = max(1, int(ev.get("hypotension", {}).get("min_sustain_min", 1) * 60 / dt))
     h5 = int(5 * 60 / dt)
 
+    extra = {"match_tirex": args.match_tirex} if args.model in _NEEDS_MATCH else {}
     if _DUMP:
-        RUNNERS[args.model]([], Lc, H, args.batch_size, args.device)   # loads model, prints tree, exits
+        RUNNERS[args.model]([], Lc, H, args.batch_size, args.device, **extra)  # load, print tree, exit
         return
 
     t0 = time.time()
@@ -392,7 +464,7 @@ def main():
                 recs[w["caseid"]] = L.load_case(w["caseid"], cfg, clin)
             w["_rec"] = recs[w["caseid"]]
 
-    emb, path = RUNNERS[args.model](win, Lc, H, args.batch_size, args.device)
+    emb, path = RUNNERS[args.model](win, Lc, H, args.batch_size, args.device, **extra)
     assert emb.shape[0] == len(win), f"emb rows {emb.shape[0]} != windows {len(win)}"
     print(f"[emb] captured {emb.shape} via '{path}' in {time.time()-t0:.0f}s", flush=True)
 
