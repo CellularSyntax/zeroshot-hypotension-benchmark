@@ -43,7 +43,7 @@ acceptance). Download it and unpack into the repository root so `results/` sits 
 The raw source datasets are **not** redistributed here (data-use terms):
 
 - **VitalDB** — openly available at <https://vitaldb.net> and via PhysioNet.
-- **MOVER** — public-access, from the UCI Machine Learning Repository.
+- **MOVER** — public-access, from the UCI Machine Learning Repository (<https://archive.ics.uci.edu/dataset/877/mover>).
 
 Reproducing the figures/tables does **not** require the raw datasets — only the released `results/`.
 Re-running the models from raw data (optional) is documented in [`notes/REPRODUCE.md`](notes/REPRODUCE.md).
