@@ -238,8 +238,11 @@ def main():
     if str(args.device).startswith("cuda"):
         import torch
         if not torch.cuda.is_available():
-            raise RuntimeError("CUDA requested but torch.cuda.is_available()==False on this node "
-                               "(transient GPU-bind failure); resubmit to land on a good node.")
+            raise RuntimeError(
+                "CUDA requested but torch.cuda.is_available()==False. The enroot NVIDIA hook "
+                "injected no GPU -- almost always NVIDIA_VISIBLE_DEVICES=void inherited from the "
+                "login shell (a CPU-srun workaround). Fix: 'unset NVIDIA_VISIBLE_DEVICES "
+                "NVIDIA_DRIVER_CAPABILITIES' before sbatch (the sbatch now also forces =all).")
 
     import yaml
     ev = yaml.safe_load(open(args.eval_config))

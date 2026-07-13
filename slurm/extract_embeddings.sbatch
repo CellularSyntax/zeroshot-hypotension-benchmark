@@ -43,6 +43,13 @@ DEFAULT_SQSH="${HOME}/containers/tirex2.sqsh"
 CONTAINER_IMAGE="${CONTAINER_IMAGE:-$( [ -f "$DEFAULT_SQSH" ] && echo "$DEFAULT_SQSH" || echo "nvcr.io#nvidia/pytorch:25.09-py3" )}"
 mkdir -p "${PROJECT_ROOT}/logs" "${PROJECT_ROOT}/results"
 export SLURM_STEP_LAUNCH_TIMEOUT=600
+# GPU job: force the enroot NVIDIA hook to inject the allocated GPU. Without this, a
+# NVIDIA_VISIBLE_DEVICES=void left exported in the login shell (e.g. from a CPU-partition
+# srun workaround) is captured by sbatch and propagated here -> the hook injects NO GPU and
+# torch reports "NO GPU". Setting =all is safe under --gres: the SLURM cgroup still limits the
+# container to the one allocated A100.
+export NVIDIA_VISIBLE_DEVICES=all
+export NVIDIA_DRIVER_CAPABILITIES=compute,utility
 echo "Project root : ${PROJECT_ROOT}"; echo "Container : ${CONTAINER_IMAGE}"
 echo "MODEL=${MODEL} COV=${COV} CONFIG=${CONFIG} MATCH=${MATCH} MAXWIN=${MAXWIN}"
 
