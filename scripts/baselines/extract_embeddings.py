@@ -232,6 +232,15 @@ def main():
     ap.add_argument("--quiet", action="store_true")
     args = ap.parse_args()
 
+    # Fail fast on a bad GPU node BEFORE the (minutes-long) window build, so a transient
+    # container GPU-bind failure costs seconds, not a wasted window build. (Job 534847 built
+    # 4000 windows, then died at load_model on a node where CUDA wasn't visible.)
+    if str(args.device).startswith("cuda"):
+        import torch
+        if not torch.cuda.is_available():
+            raise RuntimeError("CUDA requested but torch.cuda.is_available()==False on this node "
+                               "(transient GPU-bind failure); resubmit to land on a good node.")
+
     import yaml
     ev = yaml.safe_load(open(args.eval_config))
     L = P.get_loader(args.config)
