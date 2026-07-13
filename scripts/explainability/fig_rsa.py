@@ -19,6 +19,6 @@ for ax,(tag,cohort) in zip(axes,[("all2873","VitalDB"),("mover_art","MOVER (exte
     ax.axhline(3.5,color="#4dd",lw=1.5); ax.axvline(3.5,color="#4dd",lw=1.5)
 cbar=fig.colorbar(im,ax=axes,fraction=0.025,pad=0.02)
 cbar.set_label("linear CKA (representational similarity)",fontsize=9)
-fig.suptitle("Cross-model representational similarity (linear CKA) on identical windows",fontsize=12.5,y=1.0)
+
 fig.savefig("FigS_rsa_cka.png",dpi=150,bbox_inches="tight")
 print("saved")

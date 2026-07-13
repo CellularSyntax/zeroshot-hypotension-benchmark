@@ -41,21 +41,25 @@ plt.rcParams.update({
 })
 
 # ── palette (fixed semantics everywhere) ──────────────────────────────────────
+# Colours are drawn from the seaborn "colorblind" qualitative palette (Wong 2011,
+# Nature Methods) — a fixed, CVD-safe mapping with FIXED semantic meaning across
+# every figure. TiRex-2 (M1) is the focal series (deep blue), rendered with the
+# heaviest visual weight; comparators take distinct, well-separated hues.
 C = {
-    "M1":        "#0B7A8E",  # teal  — with drug covariate (primary model)
-    "M1_light":  "#7FBFC9",
-    "M0":        "#E08214",  # amber — target-only (ablation control)
-    "M0_light":  "#F1C27A",
-    "persist":   "#9AA0A6",  # grey  — persistence baseline
-    "transition":"#0B4F6C",  # dark  — transition windows
-    "steady":    "#7FBFC9",  # light — steady windows
-    "kapral":    "#7B3FA0",  # purple diamond — Kapral 2024 (TFT)
-    "zhu":       "#C0392B",  # red square    — Zhu 2026 (Transformer)
-    "rate":      "#4C9A2A",  # green — RATE covariate arm
-    "pressor":   "#B0752A",  # brown — phenylephrine arm
+    "M1":        "#0173B2",  # deep blue — TiRex-2 / with-covariate (focal model)
+    "M1_light":  "#8EC1E0",  # light blue — forecast interval fills
+    "M0":        "#DE8F05",  # orange — target-only (covariate ablation control, Fig 2 only)
+    "M0_light":  "#F2C878",
+    "persist":   "#949494",  # grey  — persistence baseline
+    "transition":"#08519C",  # dark blue  — transition windows (sequential within-model)
+    "steady":    "#9ECAE1",  # light blue — steady windows (sequential within-model)
+    "kapral":    "#7B3FA0",  # purple diamond — Kapral 2024 (TFT), external literature point
+    "zhu":       "#C0392B",  # red square     — Zhu 2026 (Transformer), external literature point
+    "rate":      "#56B4E9",  # sky blue — RATE covariate arm (Fig 2 only; unused legacy key)
+    "pressor":   "#ECE133",  # yellow   — phenylephrine arm (Fig 2 only; unused legacy key)
     "ink":       "#222222",
     "grid":      "#DDDDDD",
-    "event":     "#C0392B",
+    "event":     "#C0392B",  # alarm hue (MAP<65 threshold) — reserved, not a data series
 }
 
 # ── external foil numbers (from notes/RELATED_WORK.md; also in comparison tables)
@@ -92,11 +96,18 @@ def panel_letter(ax, letter: str, dx: float = -0.16, dy: float = 1.06):
             va="top", ha="right", family="sans-serif")
 
 
+# House style: panels carry only their bold letter (a, b, c…); the caption
+# describes each panel. `title=` args are retained at call sites as inline
+# documentation of panel content, but are not rendered while this flag is False.
+SHOW_PANEL_TITLES = False
+
+
 def finish(ax, xlabel=None, ylabel=None, title=None, ygrid=False):
     # Plain white background — no gridlines anywhere (paper house style).
     if xlabel: ax.set_xlabel(xlabel)
     if ylabel: ax.set_ylabel(ylabel)
-    if title:  ax.set_title(title, loc="center")
+    if title and SHOW_PANEL_TITLES:
+        ax.set_title(title, loc="center")
     return ax
 
 

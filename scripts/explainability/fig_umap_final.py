@@ -39,7 +39,7 @@ def render(tag, cohort_csv, cohort_title, outfile):
     leg=[Line2D([0],[0],marker='o',color='w',markerfacecolor=GREY,markersize=8,label='no impending hypotension'),
          Line2D([0],[0],marker='o',color='w',markerfacecolor=RED,markersize=8,label='impending hypotension at horizon')]
     fig.legend(handles=leg,loc="lower center",ncol=2,frameon=False,fontsize=10,bbox_to_anchor=(0.5,-0.015))
-    fig.suptitle(f"{cohort_title}: per-window encoder representations (UMAP), coloured by impending hypotension",fontsize=12.5,y=1.0)
+
     fig.tight_layout(rect=[0,0.035,1,0.97])
     fig.savefig(outfile,dpi=150,bbox_inches="tight"); plt.close(fig)
     print("saved",outfile)

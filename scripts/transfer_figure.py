@@ -52,7 +52,7 @@ TRAIN_SRC = {  # human-readable training source, for the "transferred from" labe
     (VITALDB, "in-domain"): "", (MOVER, "in-domain"): "",
 }
 MODEL_DISP = {"tft": "TFT", "patchtst": "PatchTST"}
-MODEL_COL = {"tft": "#566573", "patchtst": "#3D5A80"}   # match paper_figures baseline palette
+MODEL_COL = {"tft": "#DE8F05", "patchtst": "#CC78BC"}   # match paper_figures baseline palette (colorblind)
 
 
 def load_rows(tag):
@@ -132,7 +132,7 @@ def main():
                         zorder=4, label=lab)
         ax.set_xticks(HORIZONS)
         ax.set_xlabel("forecast horizon (min)")
-        ax.set_title(f"test cohort: {ts}", loc="center")
+        ax.set_title(ts, loc="center")
         ax.set_ylim(0.62, 1.0)
         ax.legend(loc="lower left", ncol=1, fontsize=5.6, handlelength=2.1)
     axes[0].set_ylabel("impending-hypotension AUROC")

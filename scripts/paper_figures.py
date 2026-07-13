@@ -172,7 +172,7 @@ def figure1(tag):
         mp = load_primary("mover_art")
         mover["_n_windows"] = mp["n_windows"] if mp else mover.get("n_cached", 0)
     _cohort_flow(ax_flow, flow, prim, hyp, n_cohort, mover)
-    ax_flow.set_title("Cohort curation", loc="center")
+
     S.panel_letter(ax_flow, "b", dx=-0.10, dy=1.06)
 
     # c — three representative forecasts (steady / transition / hypotensive onset)
@@ -214,7 +214,7 @@ def _schematic(ax):
     ax2.text(15, 1.22, "known future covariate (M1)", fontsize=5.5, color=S.C["M0"], ha="right")
     ax2.spines["left"].set_visible(False)
     ax.set_xlim(-30, 15); ax.set_ylim(55, 100); ax.set_xticks([])
-    ax.set_ylabel("MAP (mmHg)"); ax.set_title("Forecasting task", loc="left")
+    ax.set_ylabel("MAP (mmHg)")
     ax.legend(loc="upper right", fontsize=5.5)
 
 
@@ -378,7 +378,7 @@ def figure2(tag):
     c.set_yticks([ar[2] for ar in arms]); c.set_yticklabels([ar[0] for ar in arms], fontsize=5.8)
     c.set_ylim(-0.5, 2.5)
     c.set_xlabel("CRPS reduction, transition @7 min (%)")
-    c.set_title("Which covariate, which model?", loc="center")
+
     from matplotlib.lines import Line2D
     handles = [Line2D([], [], color=S.C["M1"], marker="o", ls="none", label="TiRex-2 (zero-shot)")]
     handles += [Line2D([], [], color=m["col"], marker=m["mk"], ls="none", label=f"{m['disp']} (trained)")
@@ -457,8 +457,8 @@ def _kapral_panel(ax, tag):
 # ══════════════════════════════════════════════════════════════════════════════
 # FIGURE 4 — impending-hypotension prediction: zero-shot vs trained vs SOTA
 # ══════════════════════════════════════════════════════════════════════════════
-TFT_COL = "#566573"     # slate — the trained TFT baseline
-PATCH_COL = "#3D5A80"   # steel blue — the trained PatchTST baseline
+TFT_COL = "#DE8F05"     # orange — the trained TFT baseline (colorblind palette)
+PATCH_COL = "#CC78BC"   # orchid — the trained PatchTST baseline (colorblind palette)
 
 # Trained supervised baselines, in display order. Each entry is rendered wherever a matched
 # comparator appears; models are distinguished by colour + linestyle + marker so panels stay
@@ -482,9 +482,9 @@ def available_baselines(tag):
 # univariate (they don't ingest the drug covariate). Their own visual tier, distinct from the
 # trained baselines above. Colours are local to the zero-shot figure/table (no clash there).
 ZEROSHOT_TSFM = [
-    dict(key="chronos", disp="Chronos-Bolt",  col="#D35400", ls="--", mk="s"),
-    dict(key="timesfm", disp="TimesFM-2.5",   col="#8E44AD", ls="-.", mk="^"),
-    dict(key="moirai",  disp="Moirai-1.1-R",  col="#2C7A3F", ls=":",  mk="D"),
+    dict(key="chronos", disp="Chronos-Bolt",  col="#D55E00", ls="--", mk="s"),  # vermilion
+    dict(key="timesfm", disp="TimesFM-2.5",   col="#029E73", ls="-.", mk="^"),  # green
+    dict(key="moirai",  disp="Moirai-1.1-R",  col="#CA9161", ls=":",  mk="D"),  # tan
 ]
 
 def available_zeroshot(tag):
@@ -734,7 +734,7 @@ def figure_zeroshot(tag, save="Fig3_zeroshot_tsfm", cohort_note=None):
     axd.legend(loc="lower right", fontsize=5.4); S.panel_letter(axd, "d")
 
     if cohort_note:
-        fig.suptitle(cohort_note, y=0.99, fontsize=8, fontweight="bold")
+        pass  # cohort identity moves to the caption (no suptitle in house style)
     S.save_fig(fig, save)
 
 
@@ -769,8 +769,6 @@ def _mini_strip(fig, cell, keys, models, valfn, ylim, letter, ylabel, blocktitle
         if i > 0:
             ax.tick_params(labelleft=False)
     pos = cell.get_position(fig)
-    fig.text(pos.x0 + pos.width / 2, pos.y1 + 0.022, blocktitle, ha="center", va="bottom",
-             fontsize=7.5, fontweight="bold")
     fig.text(pos.x0 + pos.width / 2, pos.y0 - 0.048, "forecast horizon (min)", ha="center", va="top", fontsize=6)
     fig.text(pos.x0 - 0.026, pos.y0 + pos.height / 2, ylabel, rotation=90, ha="right", va="center", fontsize=6)
     S.panel_letter(ax0, letter, dx=-0.26, dy=1.20)
@@ -792,9 +790,9 @@ def figure4(tag):
 
     # the four models overlaid in panels b & d (fixed colours + markers, matching the forest panel)
     MODELS = [("TiRex-2 (zero-shot)", tag, S.C["M1"], True, "o"),
-              ("TFT (trained)", f"baseline-tft_{tag}", "#566573", False, "s"),
-              ("PatchTST (trained)", f"baseline-patchtst_{tag}", "#3D5A80", False, "^"),
-              ("Chronos-Bolt (zero-shot)", f"baseline-chronos_{tag}", "#D35400", False, "D")]
+              ("TFT (trained)", f"baseline-tft_{tag}", TFT_COL, False, "s"),
+              ("PatchTST (trained)", f"baseline-patchtst_{tag}", PATCH_COL, False, "^"),
+              ("Chronos-Bolt (zero-shot)", f"baseline-chronos_{tag}", "#D55E00", False, "D")]
 
     # a — early-warning 1x2: (a1) detection yield vs lead time, (a2) alarm-burden trade-off
     sub_a = cell_a.subgridspec(1, 2, wspace=0.42)
@@ -815,7 +813,7 @@ def figure4(tag):
     a1.set_xlim(0, 15); a1.set_xticks([0, 2, 5, 10, 15]); a1.set_ylim(0, None)
     a1.set_xlabel("required lead time (min)", fontsize=6)
     a1.set_ylabel("% of impending\nevents flagged", fontsize=6)
-    a1.set_title("Detection yield vs lead time", fontsize=6.4)
+
     # reference: yield of zero-shot TiRex-2 at a clinically actionable 5-min lead time
     if tir_lead is not None and tir_lead.get("5") is not None:
         y5 = tir_lead["5"]
@@ -838,7 +836,7 @@ def figure4(tag):
     a2.set_xlim(0, None); a2.set_ylim(0, None)
     a2.set_xlabel("false alarms / hour", fontsize=6)
     a2.set_ylabel("sensitivity", fontsize=6)
-    a2.set_title("Alarm-burden trade-off", fontsize=6.4)
+
     # reference: sensitivity of zero-shot TiRex-2 at an alarm budget of 1 false alarm/hour
     if tir_at is not None:
         fa = np.asarray(tir_at["fa_per_hour"], float); se = np.asarray(tir_at["sensitivity"], float)
@@ -881,22 +879,22 @@ def figure4(tag):
     fig.legend(handles=mh, loc="lower center", ncol=4, fontsize=6.2, frameon=False, bbox_to_anchor=(0.42, 0.002))
 
     # d — subgroup forest (tall panel): TiRex-2 with CI + comparators overlaid per subgroup
-    FOREST_COMP = [("TFT", f"baseline-tft_{tag}", "#566573", "s"),
-                   ("PatchTST", f"baseline-patchtst_{tag}", "#3D5A80", "^"),
-                   ("Chronos-Bolt", f"baseline-chronos_{tag}", "#D35400", "D")]
+    FOREST_COMP = [("TFT", f"baseline-tft_{tag}", TFT_COL, "s"),
+                   ("PatchTST", f"baseline-patchtst_{tag}", PATCH_COL, "^"),
+                   ("Chronos-Bolt", f"baseline-chronos_{tag}", "#D55E00", "D")]
     fcomp = []
     for disp, t, col, mk in FOREST_COMP:
         p = f"results/subgroup_forest_{t}_h5.json"
         if os.path.exists(p):
             fcomp.append((disp, json.load(open(p)), col, mk))
-    _forest(ax_forest, sg, fcomp, title="Subgroup robustness — VitalDB")
+    _forest(ax_forest, sg, fcomp, title="VitalDB")
     S.panel_letter(ax_forest, "d", dx=0.02, dy=1.04)
 
     # d(ii) — MOVER external subgroup forest, same helper/style so the two panels match exactly
     MOVER_TAG = "mover_art"
-    MOVER_COMP = [("TFT", "baseline-tft_mover_art_covmover_rate", "#566573", "s"),
-                  ("PatchTST", "baseline-patchtst_mover_art_covmover_rate", "#3D5A80", "^"),
-                  ("Chronos-Bolt", "baseline-chronos_mover_art", "#D35400", "D")]
+    MOVER_COMP = [("TFT", "baseline-tft_mover_art_covmover_rate", TFT_COL, "s"),
+                  ("PatchTST", "baseline-patchtst_mover_art_covmover_rate", PATCH_COL, "^"),
+                  ("Chronos-Bolt", "baseline-chronos_mover_art", "#D55E00", "D")]
     sg_mover_p = f"results/subgroup_forest_{MOVER_TAG}_h5.json"
     if os.path.exists(sg_mover_p):
         sg_mover = json.load(open(sg_mover_p))
@@ -906,7 +904,7 @@ def figure4(tag):
             if os.path.exists(p):
                 mcomp.append((disp, json.load(open(p)), col, mk))
         _forest(ax_forest_mover, sg_mover, mcomp,
-                title="Subgroup robustness — MOVER (external)", show_legend=False,
+                title="MOVER (external)", show_legend=False,
                 ann_dx=-0.034)  # shift the overall-AUROC annotation ~10 px left so it clears the dashed line
 
     S.save_fig(fig, "Fig5_clinical_robustness")

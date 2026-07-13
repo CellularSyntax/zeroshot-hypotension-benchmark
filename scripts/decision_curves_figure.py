@@ -31,7 +31,7 @@ CL_V = next((p for p in ("results/vitaldb_case_subject_map.csv",
                          "datasets/vitaldb/data/clinical_data.csv") if os.path.exists(p)), None)
 HORIZONS = [1, 5, 15]
 PTS = np.linspace(0.02, 0.35, 34)          # clinically plausible alarm-threshold range
-COLORS = {"model": "#1b7837", "all": "#999999"}
+COLORS = {"model": "#0173B2", "all": "#949494"}   # focal blue (TiRex-2) + grey, match house palette
 
 
 def norm_caseid(c):
@@ -102,9 +102,7 @@ def main():
                 ax.set_xlabel("Threshold probability", fontsize=9)
             if ri == 0 and ci == 2:
                 ax.legend(fontsize=7, loc="upper right")
-    fig.suptitle("Decision-curve analysis: recalibrated zero-shot TiRex-2 vs treat-all / treat-none",
-                 fontsize=11)
-    fig.tight_layout(rect=[0, 0, 1, 0.97])
+    fig.tight_layout(rect=[0, 0, 1, 1.0])
     S.save_fig(fig, "FigS_decision_curves")
 
 
