@@ -1,0 +1,7 @@
+Model,Type,Params (M),Load time (s),Latency (ms/window),Throughput (windows/s),Peak GPU mem (MB)
+TiRex-2,Zero-shot (cov-aware),82.5,1.21,15.142,66,1540.7
+Chronos-Bolt,Zero-shot,205.29,12.77,0.519,1925.8,446.8
+TimesFM-2.5,Zero-shot,231.29,4.18,86.388,11.6,940
+Moirai-1.1-R,Zero-shot,310.97,12.82,16.637,60.1,1560.1
+TFT,Task-trained,0.29,0.04,0.064,15528.3,835.5
+PatchTST,Task-trained,4.67,0.05,0.023,44347.5,154.4

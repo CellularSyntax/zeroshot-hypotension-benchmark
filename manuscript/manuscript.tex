@@ -704,10 +704,16 @@ shift (different cadence, covariate availability, population, and
 2--3$\times$ hypotension prevalence). For institutions without the data
 scale or labelling infrastructure to train a bespoke model, a training-free
 approach that reaches supervised-comparable discrimination at urgent
-horizons is an attractive off-the-shelf option. Unlike the HPI, our approach
-uses low-resolution numeric vital signs with no arterial waveform and no
-proprietary index \citep{Hatib2018,Enevoldsen2022,Vistisen2024}, and unlike
-both trained comparators it needs no local training run before deployment.
+horizons is an attractive off-the-shelf option. This portability does not
+come at a prohibitive compute cost: at 82.5~M parameters TiRex-2 is the
+smallest of the four foundation models, all six models run inference within
+$\approx$1.6~GB of GPU memory, and per-window latency is well below the 15~s
+acquisition cadence (Supplementary Table~\ref{tab:compute_footprint}), so the
+zero-shot approach is deployable on commodity hardware in real time. Unlike
+the HPI, our approach uses low-resolution numeric vital signs with no
+arterial waveform and no proprietary index
+\citep{Hatib2018,Enevoldsen2022,Vistisen2024}, and unlike both trained
+comparators it needs no local training run before deployment.
 
 \paragraph{Where task-trained models remain ahead, and where a naive alarm
 does.} The comparison must be read on two axes: against the trained baselines
@@ -993,7 +999,12 @@ foundation-model inference is zero-shot and was executed from released
 checkpoints. Models and the evaluation pipeline were implemented in PyTorch.
 All runs were seeded, and the full configuration, cohort builders, dataset
 loaders and evaluation code are released as described under Code
-availability.
+availability. To characterise deployment cost, we measured each model's
+parameter count, one-off load time, per-window inference latency (and
+throughput) and peak GPU memory on a single A100, timing the identical
+forecast calls used to produce the results over a fixed 512-window sample
+(Supplementary Table~\ref{tab:compute_footprint}); no model was retrained for
+this measurement.
 
 \subsection{External literature comparators}
 

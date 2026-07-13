@@ -453,6 +453,34 @@ Cohort & Model & silh.\ & strat.\ & hypo & MAP lvl & emb.\ norm & purity & dept.
 \end{tabular}
 \end{table}
 
+% ---------- Supplementary Table : compute footprint ----------
+\begin{table}[ht]
+\centering\footnotesize
+\caption{\textbf{Deployment compute footprint of every model.} Parameter count,
+one-off model-load time, per-window inference latency and throughput, and peak GPU
+memory, measured on a single NVIDIA A100 over a fixed 512-window sample using the
+identical forecast calls that produced the results (no retraining). A warm-up batch
+was excluded from each timing. Latency and throughput are reported at batch size~64.
+The task-trained baselines are two-to-three orders of magnitude smaller than the
+foundation models and correspondingly faster; among the foundation models TiRex-2 is
+both the smallest and the strongest forecaster. All six models fit within
+$\approx$1.6~GB of GPU memory, so none imposes a specialised-hardware barrier to
+deployment. TimesFM-2.5's higher latency reflects its autoregressive decoding.}
+\label{tab:compute_footprint}
+\begin{tabular}{llrrrr}
+\toprule
+Model & Type & Params (M) & Load (s) & Latency (ms/win) & Peak GPU (MB) \\
+\midrule
+TiRex-2 & Zero-shot (cov-aware) & 82.5 & 1.21 & 15.14 & 1540.7 \\
+Chronos-Bolt & Zero-shot & 205.3 & 12.77 & 0.52 & 446.8 \\
+TimesFM-2.5 & Zero-shot & 231.3 & 4.18 & 86.39 & 940.0 \\
+Moirai-1.1-R & Zero-shot & 311.0 & 12.82 & 16.64 & 1560.1 \\
+TFT & Task-trained & 0.29 & 0.04 & 0.06 & 835.5 \\
+PatchTST & Task-trained & 4.67 & 0.05 & 0.02 & 154.4 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
 % ---------- Supplementary Table : TRIPOD+AI reporting checklist ----------
 \clearpage
 {\footnotesize
