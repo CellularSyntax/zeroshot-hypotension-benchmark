@@ -993,7 +993,12 @@ foundation-model inference is zero-shot and was executed from released
 checkpoints. Models and the evaluation pipeline were implemented in PyTorch.
 All runs were seeded, and the full configuration, cohort builders, dataset
 loaders and evaluation code are released as described under Code
-availability.
+availability. To characterise deployment cost, we measured each model's
+parameter count, one-off load time, per-window inference latency (and
+throughput) and peak GPU memory on a single A100, timing the identical
+forecast calls used to produce the results over a fixed 512-window sample
+(Supplementary Table~\ref{tab:compute_footprint}); no model was retrained for
+this measurement.
 
 \subsection{External literature comparators}
 
