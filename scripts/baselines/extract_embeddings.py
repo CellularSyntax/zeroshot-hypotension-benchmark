@@ -72,23 +72,28 @@ def _poolable(h, min_dim=16, max_dim=4096):
             and min_dim <= h.shape[-1] <= max_dim)
 
 
-def _choose_target(meta):
-    """meta: name -> (ndim, D). Prefer an 'encoder' stack output; else the deepest
-    block/layer module; else the largest-D module. Returns the chosen name."""
-    if not meta:
+_BAD_NAME = ("embed", "token", "patch", "input", "rotary", "pos_enc", "positional")
+
+
+def _choose_target(clean):
+    """clean: name -> dict(D, order, fires). Pick the module whose pooled output best represents
+    the encoder's final hidden state. Priority: (1) a stack literally named 'encoder'/'encoders'
+    (widest, shallowest); (2) else the LATEST-executing candidate whose name is not an input/
+    embedding/tokenizer layer (= the last transformer/xLSTM block output before the head);
+    (3) else the latest candidate. Returns the chosen name or None."""
+    if not clean:
         return None
-    def depth(n): return n.count(".")
-    enc = {n: v for n, v in meta.items() if n.endswith("encoder") or n.endswith("encoders")}
+    enc = {n: v for n, v in clean.items() if n.split(".")[-1] in ("encoder", "encoders")}
     if enc:
-        return max(enc, key=lambda n: (meta[n][1], -depth(n)))   # widest, shallowest encoder
-    blk = {n: v for n, v in meta.items()
-           if any(k in n.lower() for k in ("block", "layer", "xlstm"))}
-    if blk:
-        return max(blk, key=lambda n: (depth(n), meta[n][1]))    # deepest (last) block, then widest
-    return max(meta, key=lambda n: meta[n][1])                    # fallback: widest anything
+        return max(enc, key=lambda n: (clean[n]["D"], -n.count(".")))
+    good = {n: v for n, v in clean.items() if not any(b in n.lower() for b in _BAD_NAME)}
+    pool = good or clean
+    return max(pool, key=lambda n: clean[n]["order"])
 
 
 class _Capture:
+    """Single-module capture. Collects one pooled array per forward-fire; the caller reduces the
+    per-batch fires (a module inside a layer/sample loop fires k times per batch -> we average)."""
     def __init__(self):
         self.batches = []; self.handle = None; self.path = None
     def attach(self, module, path):
@@ -97,45 +102,69 @@ class _Capture:
             if h is not None:
                 self.batches.append(_pool(h))
         self.handle = module.register_forward_hook(hook); self.path = path; return self
-    def stack(self):
-        return np.concatenate(self.batches, axis=0) if self.batches else np.empty((0, 0))
     def detach(self):
-        if self.handle: self.handle.remove()
+        if self.handle:
+            self.handle.remove()
 
 
 def run_capture(root, run_batch, n, bs):
     """Discover the embedding module on batch 0, then capture it across all n windows.
-    run_batch(lo, hi) must trigger a forward over windows [lo:hi]. Returns (emb[N,D], path)."""
-    # ---- discovery pass (probe every parameterised submodule on the first batch) ----
-    meta = {}
+    run_batch(lo, hi) triggers a forward over windows [lo:hi]. Returns (emb[N,D], path).
+
+    Discovery probes every PARAMETERISED module (including containers such as the encoder stack,
+    whose params live in children -- the earlier recurse=False filter wrongly excluded them). A
+    candidate is 'clean' if every one of its fires emitted exactly `expected` rows (one full
+    batch); k = number of fires (k>1 = a module inside a per-layer/per-sample loop). The capture
+    pass averages the k fires per batch so multi-fire modules (moirai, tirex2) yield [b, D]."""
+    import torch
+    expected = min(bs, n)
+    stats, order = {}, [0]
     handles = []
     def mk_probe(name):
         def probe(_m, _i, out):
-            if name in meta:
-                return
             h = _extract_hidden(out)
-            if _poolable(h):
-                meta[name] = (h.dim(), int(h.shape[-1]))
+            if not _poolable(h):
+                return
+            rows = _pool(h).shape[0]
+            s = stats.setdefault(name, dict(D=int(h.shape[-1]), order=order[0], fire_rows=[]))
+            s["fire_rows"].append(rows)
+            order[0] += 1
         return probe
     for name, m in root.named_modules():
-        if name == "" or not any(True for _ in m.parameters(recurse=False)):
+        if name == "" or not any(True for _ in m.parameters()):   # keep containers w/ child params
             continue
         handles.append(m.register_forward_hook(mk_probe(name)))
-    run_batch(0, min(bs, n))
+    run_batch(0, expected)
     for h in handles:
         h.remove()
-    target = _choose_target(meta)
+    clean = {n_: dict(D=s["D"], order=s["order"], fires=len(s["fire_rows"]))
+             for n_, s in stats.items()
+             if s["fire_rows"] and all(r == expected for r in s["fire_rows"])}
+    target = _choose_target(clean)
     if target is None:
-        raise RuntimeError("autodiscovery found no poolable hidden state; inspect the model")
+        raise RuntimeError(f"autodiscovery found no clean single-batch hidden state "
+                           f"(probed {len(stats)} modules, expected rows/fire={expected})")
+    k = clean[target]["fires"]
     module = dict(root.named_modules())[target]
-    print(f"[emb] discovered {len(meta)} candidate modules; target='{target}' dim={meta[target][1]}",
-          flush=True)
-    # ---- capture pass (single hook on the chosen module, all batches incl. the first) ----
-    cap = _Capture().attach(module, f"{target}[D={meta[target][1]}]")
+    print(f"[emb] discovered {len(clean)} clean modules ({len(stats)} probed); "
+          f"target='{target}' dim={clean[target]['D']} fires/batch={k}", flush=True)
+    # ---- capture pass: per-batch, averaging the k fires the chosen module makes ----
+    cap = _Capture().attach(module, f"{target}[D={clean[target]['D']},k={k}]")
+    embs = []
     for lo in range(0, n, bs):
-        run_batch(lo, min(lo + bs, n))
+        b = min(lo + bs, n) - lo
+        cap.batches = []
+        run_batch(lo, lo + b)
+        rows = np.concatenate(cap.batches, axis=0) if cap.batches else np.empty((0, clean[target]["D"]))
+        if rows.shape[0] == b:
+            embs.append(rows)
+        elif rows.shape[0] % b == 0:                 # k fires of the full batch -> average them
+            embs.append(rows.reshape(rows.shape[0] // b, b, -1).mean(axis=0))
+        else:
+            cap.detach()
+            raise RuntimeError(f"capture: {rows.shape[0]} rows for batch of {b} (not a multiple)")
     cap.detach()
-    return cap.stack(), cap.path
+    return np.concatenate(embs, axis=0), cap.path
 
 
 # ---- per-model runners: build (root, run_batch) and delegate to run_capture ----
