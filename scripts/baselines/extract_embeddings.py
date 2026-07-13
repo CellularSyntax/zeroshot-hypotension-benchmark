@@ -107,13 +107,17 @@ class _Capture:
             self.handle.remove()
 
 
-def run_capture(root, run_batch, n, bs, pin=None):
+def run_capture(root, run_batch, n, bs, pin=None, reduce="mean"):
     """Discover (or use a PINNED) embedding module on batch 0, then capture it across all n
     windows. run_batch(lo, hi) triggers a forward over windows [lo:hi]. Returns (emb[N,D], path).
 
     pin: exact module name (from a print(model) structure dump) to hook instead of autodiscovering.
     Preferred for timesfm/tirex2, which StarEmbed doesn't cover; the discovery pass still runs to
-    measure the pinned module's fires/batch so multi-fire averaging is applied correctly.
+    measure the pinned module's fires/batch so multi-fire handling is applied correctly.
+    reduce: how to collapse the k fires a module makes per batch. 'mean' averages them (right for a
+    module inside a per-patch loop that sees the same input each fire). 'first' keeps only the
+    first fire (right for AUTOREGRESSIVE decoding, e.g. timesfm: fire 0 encodes the observed
+    context; later fires mix in generated-future tokens, which we do NOT want in the representation).
 
     Discovery probes every PARAMETERISED module (including containers such as the encoder stack,
     whose params live in children -- the earlier recurse=False filter wrongly excluded them). A
@@ -159,9 +163,9 @@ def run_capture(root, run_batch, n, bs, pin=None):
     k = clean[target]["fires"]
     module = dict(root.named_modules())[target]
     print(f"[emb] discovered {len(clean)} clean modules ({len(stats)} probed); "
-          f"target='{target}' dim={clean[target]['D']} fires/batch={k}", flush=True)
-    # ---- capture pass: per-batch, averaging the k fires the chosen module makes ----
-    cap = _Capture().attach(module, f"{target}[D={clean[target]['D']},k={k}]")
+          f"target='{target}' dim={clean[target]['D']} fires/batch={k} reduce={reduce}", flush=True)
+    # ---- capture pass: per-batch, collapsing the k fires the chosen module makes (see reduce) ----
+    cap = _Capture().attach(module, f"{target}[D={clean[target]['D']},k={k},{reduce}]")
     embs = []
     for lo in range(0, n, bs):
         b = min(lo + bs, n) - lo
@@ -170,8 +174,9 @@ def run_capture(root, run_batch, n, bs, pin=None):
         rows = np.concatenate(cap.batches, axis=0) if cap.batches else np.empty((0, clean[target]["D"]))
         if rows.shape[0] == b:
             embs.append(rows)
-        elif rows.shape[0] % b == 0:                 # k fires of the full batch -> average them
-            embs.append(rows.reshape(rows.shape[0] // b, b, -1).mean(axis=0))
+        elif rows.shape[0] % b == 0:                 # k fires of the full batch
+            stacked = rows.reshape(rows.shape[0] // b, b, -1)
+            embs.append(stacked[0] if reduce == "first" else stacked.mean(axis=0))
         else:
             cap.detach()
             raise RuntimeError(f"capture: {rows.shape[0]} rows for batch of {b} (not a multiple)")
@@ -257,36 +262,36 @@ def embed_timesfm(win, Lc, H, bs, device):
     ctx = [np.asarray(w["past"][:, 0], dtype=np.float32) for w in win]
     def run_batch(lo, hi):
         model.forecast(horizon=H, inputs=ctx[lo:hi])
-    return run_capture(root, run_batch, len(win), bs, pin=PINNED_LAYER["timesfm"])
+    # timesfm decodes autoregressively -> stacked_xf.19 fires once per decode step; keep the FIRST
+    # fire (encoding of the observed context, before any future token is generated).
+    return run_capture(root, run_batch, len(win), bs, pin=PINNED_LAYER["timesfm"], reduce="first")
 
 
 def embed_moirai(win, Lc, H, bs, device):
-    """Native Moirai encoder embedding via MoiraiForecast.embed() -- the representation method
-    StarEmbed (arXiv:2510.06200) uses. Returns per-patch encoder states [B, patches, D]; we
-    mean-pool over patches. Fixed context (patch_size=16) so all windows tokenise identically."""
-    import torch
+    """Moirai has no public .embed() in our uni2ts version (StarEmbed uses a patched fork), so we
+    drive the real GluonTS predictor forward and capture the transformer 'encoder' stack via
+    run_capture. PINNED_LAYER['moirai'] (from a --dump-structure run) selects the exact module;
+    if None, autodiscovery prefers a stack literally named 'encoder'. The encoder emits per-patch
+    states [B, patches, D] once per forward, mean-pooled by _pool -> one vector per window."""
+    import pandas as pd
+    from gluonts.dataset.common import ListDataset
     from uni2ts.model.moirai import MoiraiForecast, MoiraiModule
     module = MoiraiModule.from_pretrained("Salesforce/moirai-1.1-R-large")
-    Lctx = Lc or 512
-    model = MoiraiForecast(module=module, prediction_length=H, context_length=Lctx,
-                           patch_size=16, num_samples=100, target_dim=1,
-                           feat_dynamic_real_dim=0, past_feat_dynamic_real_dim=0).to(device)
     if _DUMP:
         _dump_structure("moirai", module); return np.empty((0, 0)), "dump"
+    model = MoiraiForecast(module=module, prediction_length=H, context_length=Lc or 512,
+                           patch_size=16, num_samples=100, target_dim=1,
+                           feat_dynamic_real_dim=0, past_feat_dynamic_real_dim=0)
+    try:
+        predictor = model.create_predictor(batch_size=bs, device=device)
+    except TypeError:
+        predictor = model.to(device).create_predictor(batch_size=bs)
     ctx = [w["past"][:, 0].astype(np.float32) for w in win]
-    embs = []
-    with torch.no_grad():
-        for lo in range(0, len(ctx), bs):
-            chunk = ctx[lo:lo + bs]
-            pt = torch.tensor(np.stack(chunk), dtype=torch.float32, device=device).unsqueeze(-1)
-            obs = torch.ones_like(pt, dtype=torch.bool)
-            pad = torch.zeros(pt.shape[:2], dtype=torch.bool, device=device)
-            e = model.embed(past_target=pt, past_observed_target=obs, past_is_pad=pad,
-                            past_feat_dynamic_real=None, past_observed_feat_dynamic_real=None,
-                            feat_dynamic_real=None, observed_feat_dynamic_real=None)
-            e = e.float()
-            embs.append((e.mean(dim=1) if e.dim() == 3 else e).cpu().numpy())
-    return np.concatenate(embs, axis=0), "MoiraiForecast.embed()::mean_over_patches"
+    def run_batch(lo, hi):
+        ds = ListDataset([{"target": c, "start": pd.Period("2020-01-01", freq="s")}
+                          for c in ctx[lo:hi]], freq="s")
+        list(predictor.predict(ds))
+    return run_capture(module, run_batch, len(win), bs, pin=PINNED_LAYER.get("moirai"))
 
 
 RUNNERS = {"tirex2": embed_tirex2, "chronos": embed_chronos,
