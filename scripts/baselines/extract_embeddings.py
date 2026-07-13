@@ -307,8 +307,12 @@ def _load_baseline_ckpt(model_name, match_tirex):
     VitalDB windows -> baseline_ckpt_vitaldb60_<m>.pt ; MOVER -> baseline_ckpt_mover_<m>.pt."""
     import torch
     from baselines.models import build_model
+    # VitalDB embeddings use the 15 s pipeline (Lc=120,H=60) -> load the 15 s all-train checkpoint
+    # (baseline_ckpt_vitaldb15_*), which matches the main-results config (cadence + cov=ce + d=64)
+    # and the FM window geometry, so windows are natively row-aligned. MOVER is natively 60 s, so
+    # its baseline_ckpt_mover_* (Lc=30,H=15,cov=mover_rate) already matches the MOVER FM windows.
     stem = os.path.basename(match_tirex)
-    cohort = "mover" if "mover" in stem else "vitaldb60"
+    cohort = "mover" if "mover" in stem else "vitaldb15"
     ck_path = f"results/baseline_ckpt_{cohort}_{model_name}.pt"
     if not os.path.exists(ck_path):
         raise FileNotFoundError(f"missing trained checkpoint {ck_path} (train.py --all-train first)")
@@ -357,7 +361,8 @@ def embed_tft(win, Lc, H, bs, device, match_tirex):
 
 def embed_patchtst(win, Lc, H, bs, device, match_tirex):
     """Trained PatchTST (task-trained reference). Penultimate = norm output, shape [B*C, n_patch, d]
-    in b-major order; reshape to [B,C,n_patch,d] and mean over channels+patches -> [B,d=96]."""
+    in b-major order; reshape to [B,C,n_patch,d] and mean over channels+patches -> [B,d] (d=d_model,
+    64 in our config -- the class default 96 is overridden by train.py --d-model 64)."""
     model, ck, _ = _load_baseline_ckpt("patchtst", match_tirex)
     if _DUMP:
         _dump_structure("patchtst", model); return np.empty((0, 0)), "dump"
