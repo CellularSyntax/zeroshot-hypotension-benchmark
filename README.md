@@ -67,7 +67,6 @@ datasets/vitaldb/         VitalDB loader, cohort builder, configs, DATA_NOTES.md
 datasets/mover/           MOVER loader + configs
 configs/eval.yaml         shared evaluation protocol (horizons, threshold, bootstrap)
 slurm/                    cluster job scripts for the heavy runs (training, inference, embeddings)
-manuscript/               LaTeX source, figures, compiled PDF
 notes/REPRODUCE.md        end-to-end recipe to regenerate results from raw data
 notes/CLUSTER.md          how the heavy runs execute on the SLURM/A100 cluster
 MOVER_SCHEMA_REPORT.md    MOVER schema and how it maps onto the VitalDB pipeline

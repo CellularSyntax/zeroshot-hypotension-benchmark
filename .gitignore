@@ -105,3 +105,6 @@ datasets/vitaldb/clinical_parameters.csv
 datasets/vitaldb/lab_parameters.csv
 datasets/vitaldb/track_names.csv
 datasets/vitaldb/LICENSE.txt
+
+# Manuscript (submitted to journal; not part of the public code release)
+/manuscript/
