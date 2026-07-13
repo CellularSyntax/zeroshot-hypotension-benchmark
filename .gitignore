@@ -85,3 +85,23 @@ BUNDLE_SHA256SUMS.txt
 results/_expl_*
 results/_rev_*
 manuscript/tables.tex
+
+# Per-model foundation-model venvs (cluster; large, per-machine)
+.tsfm-venv*/
+
+# MOVER raw dataset — access-controlled, NOT redistributed (patient data). Fetch via get_mover.sh.
+datasets/mover/clinical_data.csv
+datasets/mover/cohort_manifest.csv
+datasets/mover/EMR/
+datasets/mover/EPIC_EMR/
+datasets/mover/flowsheets_cleaned/
+datasets/mover/srv/
+datasets/mover/README.txt
+datasets/mover/all_md5sum_listing.txt
+datasets/mover/all_size_listing.txt
+
+# VitalDB reference parameter tables + license (fetched with the raw data, per-machine)
+datasets/vitaldb/clinical_parameters.csv
+datasets/vitaldb/lab_parameters.csv
+datasets/vitaldb/track_names.csv
+datasets/vitaldb/LICENSE.txt
