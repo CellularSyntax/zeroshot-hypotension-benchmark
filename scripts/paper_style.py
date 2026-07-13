@@ -102,7 +102,7 @@ def finish(ax, xlabel=None, ylabel=None, title=None, ygrid=False):
 
 def save_fig(fig, name: str):
     os.makedirs(FIG_DIR, exist_ok=True)
-    for ext in ("pdf", "png"):
+    for ext in ("pdf", "png", "svg"):
         fig.savefig(f"{FIG_DIR}/{name}.{ext}")
     plt.close(fig)
-    print(f"  wrote {FIG_DIR}/{name}.pdf + .png", flush=True)
+    print(f"  wrote {FIG_DIR}/{name}.pdf + .png + .svg", flush=True)

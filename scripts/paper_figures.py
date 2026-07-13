@@ -777,7 +777,10 @@ def figure4(tag):
     left = outer[0, 0].subgridspec(3, 1, height_ratios=[0.62, 1.0, 1.0], hspace=0.72)
     cell_a = left[0, 0]                                  # a: early-warning 1x2 (yield | alarm burden)
     cell_op, cell_sev = left[1, 0], left[2, 0]          # b: operating strip (top); c: severity strip (below)
-    ax_forest = fig.add_subplot(outer[0, 1])            # d: subgroup forest (spans the right)
+    # d: subgroup forests — VitalDB (top) and MOVER external (bottom), stacked 2x1
+    right = outer[0, 1].subgridspec(2, 1, height_ratios=[1.0, 0.72], hspace=0.42)
+    ax_forest = fig.add_subplot(right[0, 0])            # d(i): VitalDB subgroup forest
+    ax_forest_mover = fig.add_subplot(right[1, 0])      # d(ii): MOVER subgroup forest
 
     # the four models overlaid in panels b & d (fixed colours + markers, matching the forest panel)
     MODELS = [("TiRex-2 (zero-shot)", tag, S.C["M1"], True, "o"),
@@ -790,28 +793,54 @@ def figure4(tag):
     a1, a2 = fig.add_subplot(sub_a[0, 0]), fig.add_subplot(sub_a[0, 1])
     # a1 — YIELD curve: of all impending events, % flagged >= t min ahead (t=0 intercept == sensitivity)
     ts = list(range(0, 16))
+    tir_lead = None
     for disp, mt, col, tir, mk in MODELS:
         cv = (_load_json(f"results/clinical_eval_{mt}.json") or {}).get("A_early_warning", {}).get("lead_curve")
         if not cv:
             continue
-        a1.plot(ts, [cv.get(str(t)) for t in ts], "-", marker=mk, color=col, lw=(1.9 if tir else 1.1),
+        yvals = [cv.get(str(t)) for t in ts]
+        a1.plot(ts, yvals, "-", marker=mk, color=col, lw=(1.9 if tir else 1.1),
                 ms=(3.0 if tir else 2.4), mew=0.3, mec="white",
                 alpha=(1.0 if tir else 0.75), zorder=(5 if tir else 3), solid_capstyle="round")
+        if tir:
+            tir_lead = cv
     a1.set_xlim(0, 15); a1.set_xticks([0, 2, 5, 10, 15]); a1.set_ylim(0, None)
     a1.set_xlabel("required lead time (min)", fontsize=6)
     a1.set_ylabel("% of impending\nevents flagged", fontsize=6)
     a1.set_title("Detection yield vs lead time", fontsize=6.4)
+    # reference: yield of zero-shot TiRex-2 at a clinically actionable 5-min lead time
+    if tir_lead is not None and tir_lead.get("5") is not None:
+        y5 = tir_lead["5"]
+        a1.axvline(5, color="#888", ls=":", lw=0.8, zorder=1)
+        a1.annotate(f"{y5:.0f}% flagged\n$\\geq$5 min ahead", xy=(5, y5), xytext=(7.4, y5 + 12),
+                    fontsize=5.2, color="#333", va="center",
+                    arrowprops=dict(arrowstyle="-", lw=0.6, color="#888",
+                                    connectionstyle="arc3,rad=0.1"))
     # a2 — alarm-burden trade-off: sensitivity vs false-alarms/hour as the alarm threshold sweeps
+    tir_at = None
     for disp, mt, col, tir, mk in MODELS:
         at = (_load_json(f"results/clinical_eval_{mt}.json") or {}).get("A_early_warning", {}).get("alarm_tradeoff")
         if not at or not at.get("fa_per_hour"):
             continue
-        a2.plot(at["fa_per_hour"], at["sensitivity"], "-", color=col, lw=(1.9 if tir else 1.1),
+        a2.plot(at["fa_per_hour"], at["sensitivity"], "-", marker=mk, markevery=0.16,
+                color=col, lw=(1.9 if tir else 1.1), ms=(3.0 if tir else 2.4), mew=0.3, mec="white",
                 alpha=(1.0 if tir else 0.78), zorder=(5 if tir else 3), solid_capstyle="round")
+        if tir:
+            tir_at = at
     a2.set_xlim(0, None); a2.set_ylim(0, None)
     a2.set_xlabel("false alarms / hour", fontsize=6)
     a2.set_ylabel("sensitivity", fontsize=6)
     a2.set_title("Alarm-burden trade-off", fontsize=6.4)
+    # reference: sensitivity of zero-shot TiRex-2 at an alarm budget of 1 false alarm/hour
+    if tir_at is not None:
+        fa = np.asarray(tir_at["fa_per_hour"], float); se = np.asarray(tir_at["sensitivity"], float)
+        order = np.argsort(fa)
+        sens1 = float(np.interp(1.0, fa[order], se[order]))
+        a2.axvline(1.0, color="#888", ls=":", lw=0.8, zorder=1)
+        a2.annotate(f"sensitivity {sens1:.2f}\nat 1 alarm/h", xy=(1.0, sens1),
+                    xytext=(1.9, max(sens1 - 0.28, 0.12)), fontsize=5.2, color="#333", va="center",
+                    arrowprops=dict(arrowstyle="-", lw=0.6, color="#888",
+                                    connectionstyle="arc3,rad=0.1"))
     S.panel_letter(a1, "a", dx=-0.30, dy=1.18)           # one letter for the early-warning block
 
     # b — operating characteristics (TOP strip): 1x4, one subplot per metric, the four models overlaid
@@ -852,13 +881,29 @@ def figure4(tag):
         p = f"results/subgroup_forest_{t}_h5.json"
         if os.path.exists(p):
             fcomp.append((disp, json.load(open(p)), col, mk))
-    _forest(ax_forest, sg, fcomp)
+    _forest(ax_forest, sg, fcomp, title="Subgroup robustness — VitalDB")
     S.panel_letter(ax_forest, "d", dx=0.02, dy=1.04)
+
+    # d(ii) — MOVER external subgroup forest, same helper/style so the two panels match exactly
+    MOVER_TAG = "mover_art"
+    MOVER_COMP = [("TFT", "baseline-tft_mover_art_covmover_rate", "#566573", "s"),
+                  ("PatchTST", "baseline-patchtst_mover_art_covmover_rate", "#3D5A80", "^"),
+                  ("Chronos-Bolt", "baseline-chronos_mover_art", "#D35400", "D")]
+    sg_mover_p = f"results/subgroup_forest_{MOVER_TAG}_h5.json"
+    if os.path.exists(sg_mover_p):
+        sg_mover = json.load(open(sg_mover_p))
+        mcomp = []
+        for disp, t, col, mk in MOVER_COMP:
+            p = f"results/subgroup_forest_{t}_h5.json"
+            if os.path.exists(p):
+                mcomp.append((disp, json.load(open(p)), col, mk))
+        _forest(ax_forest_mover, sg_mover, mcomp,
+                title="Subgroup robustness — MOVER (external)", show_legend=False)
 
     S.save_fig(fig, "Fig5_clinical_robustness")
 
 
-def _forest(ax, sg, comparators=None):
+def _forest(ax, sg, comparators=None, title="Subgroup robustness", show_legend=True):
     """Forest with all text on the RIGHT (outer figure margin) so nothing spills into
     the neighbouring panels on the left. TiRex-2 is the CI point; each comparator (trained
     baseline + best zero-shot foil) is overlaid as a bare marker at the same row, so the
@@ -893,15 +938,16 @@ def _forest(ax, sg, comparators=None):
             yticks.append(y); ylabels.append(f"{s['level']} (n={s.get('n_cases')})  {au:.3f}")
         y += 1
     ax.axvline(overall["auroc"], color=S.C["persist"], lw=0.9, ls="--")
-    ax.text(0.03, 0.995, f"– –  TiRex-2 overall {overall['auroc']:.3f}", transform=ax.transAxes,
-            fontsize=5.4, color="#555", ha="left", va="top")
+    ax.text(0.02, 0.97, f"– –  TiRex-2 overall {overall['auroc']:.3f}", transform=ax.transAxes,
+            fontsize=5.4, color="#555", ha="left", va="top",
+            bbox=dict(boxstyle="round,pad=0.15", fc="white", ec="none", alpha=0.85), zorder=7)
     ax.set_yticks(yticks); ax.set_yticklabels(ylabels, fontsize=5.6)
     ax.yaxis.tick_right()                             # tick labels on the right
     ax.set_ylim(-0.6, y-0.4); ax.set_xlim(0.83, 0.98); ax.set_xticks([0.85, 0.90, 0.95])
-    ax.set_xlabel("hypotension AUROC @5 min"); ax.set_title("Subgroup robustness", loc="center")
+    ax.set_xlabel("hypotension AUROC @5 min"); ax.set_title(title, loc="center")
     ax.spines["left"].set_visible(False); ax.spines["right"].set_visible(True)
     ax.tick_params(axis="y", length=0)
-    if cmaps:
+    if cmaps and show_legend:
         handles = [Line2D([], [], marker="o", color=S.C["M1"], ls="none", ms=3.4, label="TiRex-2")]
         handles += [Line2D([], [], marker=mk, color=col, ls="none", ms=2.9, label=disp)
                     for disp, _, col, mk in cmaps]
