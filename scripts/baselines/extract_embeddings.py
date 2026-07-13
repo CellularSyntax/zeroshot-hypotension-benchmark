@@ -211,7 +211,11 @@ def _dump_structure(model_name, root):
 #              means it fires once per patch-step -> run_capture averages the k fires per window.
 #   timesfm  : 'stacked_xf.19' = output of the LAST (20th) transformer block (D=1280), the final
 #              encoder representation before the point/quantile heads.
-PINNED_LAYER = {"tirex2": "stack_out_norm", "timesfm": "stacked_xf.19"}
+PINNED_LAYER = {"tirex2": "stack_out_norm", "timesfm": "stacked_xf.19",
+                "moirai": "encoder.norm"}
+#   moirai   : 'encoder.norm' = final RMSNorm on the 24-layer TransformerEncoder output (D=1024),
+#              the last encoder hidden state before the distribution head (param_proj). Fires once
+#              per forward. Direct analogue of tirex2's stack_out_norm.
 
 
 def embed_tirex2(win, Lc, H, bs, device):
