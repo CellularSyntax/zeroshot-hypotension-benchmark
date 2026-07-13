@@ -107,9 +107,13 @@ class _Capture:
             self.handle.remove()
 
 
-def run_capture(root, run_batch, n, bs):
-    """Discover the embedding module on batch 0, then capture it across all n windows.
-    run_batch(lo, hi) triggers a forward over windows [lo:hi]. Returns (emb[N,D], path).
+def run_capture(root, run_batch, n, bs, pin=None):
+    """Discover (or use a PINNED) embedding module on batch 0, then capture it across all n
+    windows. run_batch(lo, hi) triggers a forward over windows [lo:hi]. Returns (emb[N,D], path).
+
+    pin: exact module name (from a print(model) structure dump) to hook instead of autodiscovering.
+    Preferred for timesfm/tirex2, which StarEmbed doesn't cover; the discovery pass still runs to
+    measure the pinned module's fires/batch so multi-fire averaging is applied correctly.
 
     Discovery probes every PARAMETERISED module (including containers such as the encoder stack,
     whose params live in children -- the earlier recurse=False filter wrongly excluded them). A
@@ -140,7 +144,15 @@ def run_capture(root, run_batch, n, bs):
     clean = {n_: dict(D=s["D"], order=s["order"], fires=len(s["fire_rows"]))
              for n_, s in stats.items()
              if s["fire_rows"] and all(r == expected for r in s["fire_rows"])}
-    target = _choose_target(clean)
+    if pin is not None:
+        if pin not in stats:
+            raise RuntimeError(f"pinned module '{pin}' never fired / not found. "
+                               f"Probed {len(stats)} modules; e.g. {list(stats)[:8]}")
+        s = stats[pin]
+        clean.setdefault(pin, dict(D=s["D"], order=s["order"], fires=len(s["fire_rows"])))
+        target = pin
+    else:
+        target = _choose_target(clean)
     if target is None:
         raise RuntimeError(f"autodiscovery found no clean single-batch hidden state "
                            f"(probed {len(stats)} modules, expected rows/fire={expected})")
@@ -167,30 +179,61 @@ def run_capture(root, run_batch, n, bs):
     return np.concatenate(embs, axis=0), cap.path
 
 
+_DUMP = False   # set by --dump-structure; makes runners print module tree and exit
+
+
+def _dump_structure(model_name, root):
+    """Print the full named-module tree (name, class, param count) so the exact embedding layer
+    can be pinned in PINNED_LAYER. Written to the job log; share it to select layers by hand."""
+    print(f"\n===== STRUCTURE DUMP: {model_name} =====", flush=True)
+    print(f"[root class] {type(root).__module__}.{type(root).__name__}", flush=True)
+    for name, m in root.named_modules():
+        if name == "":
+            continue
+        np_ = sum(p.numel() for p in m.parameters(recurse=False))
+        depth = name.count(".")
+        print(f"  {'  '*depth}{name}  <{type(m).__name__}>"
+              + (f"  params={np_}" if np_ else ""), flush=True)
+    print(f"===== END DUMP: {model_name} =====\n", flush=True)
+
+
 # ---- per-model runners: build (root, run_batch) and delegate to run_capture ----
+
+# Exact module names to pin for the two models StarEmbed does not cover. Fill from a
+# print(model) structure dump (run with --dump-structure). None -> autodiscover.
+PINNED_LAYER = {"tirex2": None, "timesfm": None}
+
 
 def embed_tirex2(win, Lc, H, bs, device):
     import phase3_ablation as P
     from tirex2 import load_model
     model = load_model("NX-AI/TiRex-2", device=device)
     root = getattr(model, "model", model)
+    if _DUMP:
+        _dump_structure("tirex2", root); return np.empty((0, 0)), "dump"
     items = [P.build_ts(w["_rec"], w["t0"], Lc, H, True, True) for w in win]
     def run_batch(lo, hi):
         model.forecast(items[lo:hi], prediction_length=H, output_type="numpy")
-    return run_capture(root, run_batch, len(win), bs)
+    return run_capture(root, run_batch, len(win), bs, pin=PINNED_LAYER["tirex2"])
 
 
 def embed_chronos(win, Lc, H, bs, device):
+    """Native Chronos encoder embedding via pipeline.embed() -- the API's documented
+    representation method (matches StarEmbed, arXiv:2510.06200). embed() returns
+    (encoder_states[B, seq, D], scale); we mean-pool over the sequence axis. No hook."""
     import torch
     from chronos import BaseChronosPipeline
     pipe = BaseChronosPipeline.from_pretrained("amazon/chronos-bolt-base",
                                                device_map=device, torch_dtype=torch.float32)
-    root = getattr(pipe, "model", pipe)
-    ctx = [w["past"][:, 0].astype(np.float32) for w in win]
-    def run_batch(lo, hi):
-        pipe.predict_quantiles([torch.tensor(c) for c in ctx[lo:hi]],
-                               prediction_length=H, quantile_levels=[0.1, 0.5, 0.9])
-    return run_capture(root, run_batch, len(win), bs)
+    if _DUMP:
+        _dump_structure("chronos", getattr(pipe, "model", pipe)); return np.empty((0, 0)), "dump"
+    ctx = [torch.tensor(w["past"][:, 0].astype(np.float32)) for w in win]
+    embs = []
+    with torch.no_grad():
+        for lo in range(0, len(ctx), bs):
+            enc, _ = pipe.embed(ctx[lo:lo + bs])            # [b, seq, D]
+            embs.append(enc.float().mean(dim=1).cpu().numpy())
+    return np.concatenate(embs, axis=0), "pipeline.embed()::mean_over_seq"
 
 
 def embed_timesfm(win, Lc, H, bs, device):
@@ -204,31 +247,41 @@ def embed_timesfm(win, Lc, H, bs, device):
     model.compile(timesfm.ForecastConfig(max_context=max_ctx, max_horizon=max(320, H),
                                          normalize_inputs=True, use_continuous_quantile_head=True))
     root = getattr(model, "model", model)
+    if _DUMP:
+        _dump_structure("timesfm", root); return np.empty((0, 0)), "dump"
     ctx = [np.asarray(w["past"][:, 0], dtype=np.float32) for w in win]
     def run_batch(lo, hi):
         model.forecast(horizon=H, inputs=ctx[lo:hi])
-    return run_capture(root, run_batch, len(win), bs)
+    return run_capture(root, run_batch, len(win), bs, pin=PINNED_LAYER["timesfm"])
 
 
 def embed_moirai(win, Lc, H, bs, device):
-    import pandas as pd
-    from gluonts.dataset.common import ListDataset
+    """Native Moirai encoder embedding via MoiraiForecast.embed() -- the representation method
+    StarEmbed (arXiv:2510.06200) uses. Returns per-patch encoder states [B, patches, D]; we
+    mean-pool over patches. Fixed context (patch_size=16) so all windows tokenise identically."""
+    import torch
     from uni2ts.model.moirai import MoiraiForecast, MoiraiModule
     module = MoiraiModule.from_pretrained("Salesforce/moirai-1.1-R-large")
-    model = MoiraiForecast(module=module, prediction_length=H, context_length=Lc or 512,
-                           patch_size="auto", num_samples=100, target_dim=1,
-                           feat_dynamic_real_dim=0, past_feat_dynamic_real_dim=0)
-    try:
-        predictor = model.create_predictor(batch_size=bs, device=device)
-    except TypeError:
-        predictor = model.to(device).create_predictor(batch_size=bs)
+    Lctx = Lc or 512
+    model = MoiraiForecast(module=module, prediction_length=H, context_length=Lctx,
+                           patch_size=16, num_samples=100, target_dim=1,
+                           feat_dynamic_real_dim=0, past_feat_dynamic_real_dim=0).to(device)
+    if _DUMP:
+        _dump_structure("moirai", module); return np.empty((0, 0)), "dump"
     ctx = [w["past"][:, 0].astype(np.float32) for w in win]
-    def run_batch(lo, hi):
-        ds = ListDataset([{"target": c, "start": pd.Period("2020-01-01", freq="s")}
-                          for c in ctx[lo:hi]], freq="s")
-        list(predictor.predict(ds))
-    # hook the MoiraiModule (the nn.Module the predictor calls under the hood)
-    return run_capture(module, run_batch, len(win), bs)
+    embs = []
+    with torch.no_grad():
+        for lo in range(0, len(ctx), bs):
+            chunk = ctx[lo:lo + bs]
+            pt = torch.tensor(np.stack(chunk), dtype=torch.float32, device=device).unsqueeze(-1)
+            obs = torch.ones_like(pt, dtype=torch.bool)
+            pad = torch.zeros(pt.shape[:2], dtype=torch.bool, device=device)
+            e = model.embed(past_target=pt, past_observed_target=obs, past_is_pad=pad,
+                            past_feat_dynamic_real=None, past_observed_feat_dynamic_real=None,
+                            feat_dynamic_real=None, observed_feat_dynamic_real=None)
+            e = e.float()
+            embs.append((e.mean(dim=1) if e.dim() == 3 else e).cpu().numpy())
+    return np.concatenate(embs, axis=0), "MoiraiForecast.embed()::mean_over_patches"
 
 
 RUNNERS = {"tirex2": embed_tirex2, "chronos": embed_chronos,
@@ -267,7 +320,11 @@ def main():
     ap.add_argument("--seed", type=int, default=0)
     ap.add_argument("--tag", default=None)
     ap.add_argument("--quiet", action="store_true")
+    ap.add_argument("--dump-structure", action="store_true",
+                    help="print the model's named-module tree and exit (to pin the embedding layer)")
     args = ap.parse_args()
+    global _DUMP
+    _DUMP = args.dump_structure
 
     if str(args.device).startswith("cuda"):
         import torch
@@ -295,6 +352,10 @@ def main():
     stride = int(ev["origin_stride_min"] * 60 / dt); warmup = int(ev["warmup_min"] * 60 / dt)
     min_run = max(1, int(ev.get("hypotension", {}).get("min_sustain_min", 1) * 60 / dt))
     h5 = int(5 * 60 / dt)
+
+    if _DUMP:
+        RUNNERS[args.model]([], Lc, H, args.batch_size, args.device)   # loads model, prints tree, exits
+        return
 
     t0 = time.time()
     win, _, _ = D.build_windows(cases, cfg, clin, Lc, H, stride, warmup, args.max_origins, dt, min_run,
