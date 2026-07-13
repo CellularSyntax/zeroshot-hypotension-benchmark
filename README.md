@@ -34,10 +34,18 @@ The notebook's final cell prints a figure/table → result-file provenance map f
 
 ## Where the data (result files) lives
 
-The `results/` directory required by the notebook (~1.4 GB: per-window forecasts, aggregate metrics,
-embeddings, precomputed tables) is archived on **Zenodo** and released with the paper (DOI added on
-acceptance). Download it and unpack into the repository root so `results/` sits next to
-`reproduce_paper.ipynb`. This GitHub repository is the **living codebase**; the Zenodo record is the
+The result files split into two tiers:
+
+- **Curated small results** (~0.4 MB) are committed to this repository: every manuscript table
+  (`results/tables/`) plus the aggregate CSVs/JSONs the notebook reads. A bare clone therefore already
+  contains every table's numbers.
+- **Bulk results** (~1.4 GB: per-window forecasts, per-model embeddings, model checkpoints) are **not**
+  in git. They are archived on **Zenodo** and released with the paper (DOI added on acceptance).
+  Download that bundle and unpack it into the repository root so its `results/` files sit alongside the
+  committed ones, next to `reproduce_paper.ipynb`.
+
+The full figure/table regeneration in the notebook needs the Zenodo bulk files; browsing the table
+values does not. This GitHub repository is the **living codebase**; the Zenodo record is the
 **citable, frozen snapshot** of code + results at publication.
 
 The raw source datasets are **not** redistributed here (data-use terms):
